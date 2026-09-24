@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NakhlaGuard — Early Red Palm Weevil Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
+    --palm:#1F5C4A; --palm-deep:#123A2E; --date:#B8752E; --date-light:#D99A55;
+    --alert:#A63D40; --card:#FBF9F3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
+    line-height:1.65; font-size:16px;
+  }
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif; letter-spacing:-0.01em}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+  a{color:inherit}
+
+  .hero{
+    background:radial-gradient(ellipse at 30% -10%, var(--palm) 0%, var(--palm-deep) 55%, var(--ink) 100%);
+    color:var(--sand); padding:72px 0 56px; position:relative; overflow:hidden;
+  }
+  .hero-grid{
+    display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center;
+  }
+  @media(max-width:760px){ .hero-grid{grid-template-columns:1fr} }
+
+  .eyebrow{
+    font-size:.8rem; color:var(--date-light); font-weight:600; margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--date-light)}
+
+  .hero h1{font-size:2.6rem; line-height:1.08; margin-bottom:16px}
+  .hero h1 span{color:var(--date-light)}
+  .hero p.tag{font-size:1.05rem; color:#D8E2DC; max-width:440px; margin-bottom:28px}
+
+  .cta-row{display:flex; gap:12px; flex-wrap:wrap}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:8px;
+    font-weight:600; font-size:.92rem; text-decoration:none; border:1.5px solid transparent;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn-fill{background:var(--date); color:var(--ink)}
+  .btn-fill:hover{background:var(--date-light)}
+  .btn-line{border-color:rgba(237,230,214,.4); color:var(--sand)}
+  .btn-line:hover{border-color:var(--sand)}
+
+  .wave-box{
+    background:rgba(0,0,0,.18); border-radius:16px; padding:28px;
+    border:1px solid rgba(237,230,214,.12);
+  }
+  .wave-bars{display:flex; align-items:flex-end; gap:4px; height:100px; margin-bottom:14px}
+  .wave-bars span{
+    flex:1; background:linear-gradient(180deg, var(--date-light), var(--date));
+    border-radius:3px; animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{transform:scaleY(.3)} 50%{transform:scaleY(1)} }
+  .wave-label{font-size:.78rem; color:#B9C7C0; display:flex; justify-content:space-between}
+
+  section{padding:52px 0}
+  .kicker{
+    font-size:.78rem; font-weight:600; color:var(--date); letter-spacing:.02em;
+    margin-bottom:8px;
+  }
+  h2{font-size:1.55rem; margin-bottom:16px; color:var(--palm-deep)}
+  p.lead{color:var(--ink-soft); max-width:640px; font-size:.98rem}
+
+  .stat-row{display:flex; gap:16px; flex-wrap:wrap; margin-top:22px}
+  .stat{
+    flex:1; min-width:150px; background:var(--card); border-radius:12px; padding:20px;
+    border-top:3px solid var(--date);
+  }
+  .stat .num{font-family:'Space Grotesk',sans-serif; font-size:1.4rem; font-weight:700; color:var(--palm-deep)}
+  .stat .label{font-size:.82rem; color:var(--ink-soft); margin-top:4px}
+
+  .steps{margin-top:24px}
+  .step{
+    display:grid; grid-template-columns:64px 1fr; gap:20px; padding:20px 0;
+    border-bottom:1px solid var(--sand-deep);
+  }
+  .step:last-child{border-bottom:none}
+  .step .ghost-num{
+    font-family:'Space Grotesk',sans-serif; font-size:2.2rem; font-weight:700;
+    color:transparent; -webkit-text-stroke:1.5px var(--date); opacity:.55;
+  }
+  .step h3{font-size:1.05rem; margin-bottom:4px; color:var(--ink)}
+  .step p{color:var(--ink-soft); font-size:.9rem}
+
+  .compare{margin-top:22px; display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:600px){.compare{grid-template-columns:1fr}}
+  .compare .col{background:var(--card); border-radius:12px; padding:22px}
+  .compare .col.us{border:2px solid var(--palm); background:#F2F6F3}
+  .compare h4{font-family:'Space Grotesk',sans-serif; font-size:1rem; margin-bottom:14px}
+  .compare .col.us h4{color:var(--palm-deep)}
+  .compare .col.them h4{color:var(--ink-soft)}
+  .compare ul{list-style:none; display:grid; gap:10px}
+  .compare li{font-size:.88rem; color:var(--ink-soft)}
+  .compare .col.us li{color:var(--ink)}
+  .compare li::before{content:"—"; margin-right:8px; color:var(--date)}
+
+  .final{
+    background:var(--palm-deep); color:var(--sand); border-radius:16px; padding:40px;
+    text-align:center; margin:0 auto;
+  }
+  .final h2{color:var(--sand)}
+  .final p{color:#CBD9D3; margin-bottom:22px}
+
+  footer{text-align:center; padding:28px 0; color:var(--ink-soft); font-size:.8rem}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>SAIF 2026 — Marine, Agricultural &amp; Food Tech Track</div>
+      <h1>Listening to palm trees <span>before it's too late.</span></h1>
+      <p class="tag">NakhlaGuard detects Red Palm Weevil infestations from trunk vibration sound, weeks before any visible symptom appears — using a sensor that costs under 30 USD.</p>
+      <div class="cta-row">
+        <a href="/static/test.html" class="btn btn-fill">Run a live test</a>
+        <a href="/static/agent.html" class="btn btn-fill">Ask the AI Assistant</a>
+        <a href="/static/dashboard.html" class="btn btn-line">Farmer alert dashboard</a>
+        <a href="/static/palms.html" class="btn btn-line">Palm registry</a>
+      </div>
+    </div>
+    <div class="wave-box">
+      <div class="wave-bars" id="waveBars"></div>
+      <div class="wave-label"><span>Trunk audio input</span><span>Listening…</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div class="kicker">The problem</div>
+    <h2>By the time you can see it, it's already too late</h2>
+    <p class="lead">
+      Red Palm Weevil larvae feed inside the trunk for months before any external
+      sign appears. Farmers currently rely on manual trunk-tapping, trained sniffer
+      dogs, or waiting for visible damage — by then, the palm is usually beyond saving.
+    </p>
+    <div class="stat-row">
+      <div class="stat"><div class="num">Billions SAR</div><div class="label">annual losses in Saudi Arabia</div></div>
+      <div class="stat"><div class="num">Weeks earlier</div><div class="label">than visible symptoms</div></div>
+      <div class="stat"><div class="num">No cure</div><div class="label">once infestation is advanced</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">The solution</div>
+    <h2>A cheap sensor, a trained ear, an instant decision</h2>
+    <p class="lead">
+      NakhlaGuard listens to trunk vibration through a low-cost contact sensor,
+      and a machine learning model trained to recognize the acoustic signature of
+      larvae feeding inside the wood — long before the palm shows any outward sign.
+      The system classifies severity across four stages and sends an instant
+      treatment recommendation.
+    </p>
+  </section>
+
+  <section>
+    <div class="kicker">How it works</div>
+    <h2>From vibration to decision, in seconds</h2>
+    <div class="steps">
+      <div class="step"><div class="ghost-num">01</div><div><h3>Listen</h3><p>A low-cost sound sensor is mounted on the trunk, wired to a microcontroller.</p></div></div>
+      <div class="step"><div class="ghost-num">02</div><div><h3>Analyze</h3><p>An AI model reads the frequency pattern and classifies the palm: healthy, early, moderate, or advanced infestation.</p></div></div>
+      <div class="step"><div class="ghost-num">03</div><div><h3>Decide</h3><p>An instant treatment recommendation, with an estimated cost-of-inaction versus cost-of-treatment.</p></div></div>
+      <div class="step"><div class="ghost-num">04</div><div><h3>Alert</h3><p>A real-time notification reaches the farmer the moment a reading crosses a risk threshold.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">Agentic AI</div>
+    <h2>Ask it anything about your farm — it looks up the real data itself</h2>
+    <p class="lead">
+      The Farm Assistant isn't a single canned prompt. It's given real tools —
+      it can query your palm registry, pull one palm's full check history, or
+      list every palm that currently needs attention — and decides on its own,
+      question by question, which tool (if any) to call before answering.
+    </p>
+  </section>
+
+  <section>
+    <div class="kicker">Why it's different</div>
+    <h2>Built for the field, not the lab</h2>
+    <div class="compare">
+      <div class="col them">
+        <h4>Published research</h4>
+        <ul>
+          <li>Distributed fiber-optic sensing — expensive, specialist install</li>
+          <li>Binary output: infested or not</li>
+          <li>Stops at classification</li>
+        </ul>
+      </div>
+      <div class="col us">
+        <h4>NakhlaGuard</h4>
+        <ul>
+          <li>Low-cost contact sensor + microcontroller, self-installed</li>
+          <li>Four severity stages, not two</li>
+          <li>Treatment plan + economic estimate + live alert</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="final">
+      <h2>See it detect an infestation live</h2>
+      <p>Upload a trunk recording and watch the model classify it in real time.</p>
+      <a href="/static/test.html" class="btn btn-fill">Start the demo</a>
+    </div>
+  </section>
+
+</div>
+
+<footer>NakhlaGuard — built for SAIF 2026, Marine, Agricultural &amp; Food Technologies track</footer>
+
+<script>
+  const bars = document.getElementById('waveBars');
+  const heights = [30,55,80,45,90,60,35,70,50,85,40,65];
+  heights.forEach((h,i)=>{
+    const bar = document.createElement('span');
+    bar.style.height = h + '%';
+    bar.style.animationDelay = (i * 0.08) + 's';
+    bars.appendChild(bar);
+  });
+</script>
+
+</body>
+</html>

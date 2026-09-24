@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NakhlaGuard — Farmer Alert Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
+    --palm:#1F5C4A; --palm-deep:#123A2E; --date:#B8752E;
+    --moderate:#C1650E; --advanced:#A63D40; --card:#FBF9F3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
+    min-height:100vh; padding:28px 20px;
+  }
+  h1,h2{font-family:'Space Grotesk',sans-serif}
+  .wrap{max-width:600px; margin:0 auto}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:14px}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px}
+  h1{font-size:1.35rem; color:var(--palm-deep)}
+  .status{display:flex; align-items:center; gap:6px; font-size:.82rem; color:var(--ink-soft)}
+  .dot{width:9px; height:9px; border-radius:50%; background:#ccc}
+  .dot.on{background:var(--palm)} .dot.off{background:var(--advanced)}
+
+  .empty{text-align:center; color:var(--ink-soft); padding:60px 20px; font-size:.92rem}
+
+  .alert-card{
+    background:var(--card); border-radius:14px; padding:18px; margin-bottom:12px;
+    border-right:5px solid #ccc; animation:slideIn .3s ease-out;
+  }
+  .alert-card.moderate{border-right-color:var(--moderate)}
+  .alert-card.advanced{border-right-color:var(--advanced)}
+  @keyframes slideIn{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:translateY(0)}}
+
+  .alert-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px}
+  .badge{padding:4px 12px; border-radius:20px; font-weight:700; font-size:.78rem; color:#fff}
+  .badge.moderate{background:var(--moderate)} .badge.advanced{background:var(--advanced)}
+  .time{font-size:.75rem; color:var(--ink-soft)}
+  .palm-id{font-weight:700; font-family:'Space Grotesk',sans-serif}
+  .rec{font-size:.87rem; line-height:1.7; white-space:pre-wrap; margin-top:8px; color:var(--ink-soft)}
+
+  #enableSound{
+    display:block; width:100%; padding:12px; margin-bottom:16px; border:none;
+    border-radius:10px; background:var(--palm); color:#fff; font-weight:700; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  #enableSound:hover{background:var(--palm-deep)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/static/index.html" class="back">← Back to overview</a>
+  <header>
+    <h1>🔔 Farmer alert dashboard</h1>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Connecting…</span></div>
+  </header>
+
+  <button id="enableSound">Enable sound &amp; browser notifications</button>
+
+  <div id="alertsContainer">
+    <div class="empty" id="emptyState">No alerts yet — all monitored palms are healthy ✅</div>
+  </div>
+  <a href="/static/agent.html" class="nav-link">Ask the AI Assistant →</a>
+  <a href="/static/palms.html" class="nav-link">View full palm registry →</a>
+</div>
+
+<style>
+  .nav-link{display:block; text-align:center; font-size:.85rem; color:var(--palm-deep); margin-top:16px}
+</style>
+
+<script>
+const API_HOST = window.location.host;
+let soundEnabled = false;
+const CLASS_MAP = { "سليم":"healthy","مبكرة":"early","متوسطة":"moderate","متقدمة":"advanced" };
+
+document.getElementById('enableSound').onclick = async () => {
+  if ("Notification" in window) { await Notification.requestPermission(); }
+  soundEnabled = true;
+  document.getElementById('enableSound').textContent = "✅ Notifications enabled";
+};
+
+function playBeep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.2, ctx.currentTime);
+    o.start(); o.stop(ctx.currentTime + 0.4);
+  }catch(e){}
+}
+
+function addAlertCard(data){
+  document.getElementById('emptyState')?.remove();
+  const container = document.getElementById('alertsContainer');
+  const severityKey = CLASS_MAP[data.severity] || 'moderate';
+  const card = document.createElement('div');
+  card.className = `alert-card ${severityKey}`;
+  const time = new Date(data.timestamp).toLocaleString('en-US');
+  card.innerHTML = `
+    <div class="alert-top">
+      <span class="palm-id">🌴 ${data.palm_id}</span>
+      <span class="badge ${severityKey}">${data.severity}</span>
+    </div>
+    ${data.location ? `<div class="time">📍 ${data.location}</div>` : ''}
+    <div class="time">${time} — risk score: ${(data.score*100).toFixed(0)}%</div>
+    <div class="rec">${data.recommendation}</div>
+  `;
+  container.prepend(card);
+
+  if(soundEnabled){
+    playBeep();
+    if (Notification.permission === "granted") {
+      new Notification(`⚠️ NakhlaGuard alert: ${data.palm_id}`, {
+        body: `Severity: ${data.severity} — action recommended`,
+      });
+    }
+  }
+}
+
+function connect(){
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${API_HOST}/ws/alerts`);
+
+  ws.onopen = () => {
+    document.getElementById('statusDot').className = 'dot on';
+    document.getElementById('statusText').textContent = 'Connected — waiting for alerts';
+  };
+  ws.onclose = () => {
+    document.getElementById('statusDot').className = 'dot off';
+    document.getElementById('statusText').textContent = 'Disconnected — reconnecting…';
+    setTimeout(connect, 3000);
+  };
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'alert') addAlertCard(data);
+  };
+}
+
+connect();
+</script>
+</body>
+</html>

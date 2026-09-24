@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NakhlaGuard — Farm Assistant (Agentic AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
+    --palm:#1F5C4A; --palm-deep:#123A2E; --date:#B8752E; --card:#FBF9F3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
+    min-height:100vh; padding:24px 16px; display:flex; flex-direction:column;
+  }
+  h1{font-family:'Space Grotesk',sans-serif}
+  .wrap{max-width:600px; margin:0 auto; width:100%; display:flex; flex-direction:column; flex:1}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:12px}
+  header{margin-bottom:14px}
+  h1{font-size:1.3rem; color:var(--palm-deep); margin-bottom:4px}
+  .sub{color:var(--ink-soft); font-size:.87rem}
+
+  #chatLog{
+    flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px;
+    padding:6px 0 16px; min-height:300px;
+  }
+  .msg{max-width:85%; padding:12px 15px; border-radius:14px; font-size:.9rem; line-height:1.6}
+  .msg.user{align-self:flex-end; background:var(--palm); color:#fff; border-bottom-left-radius:4px}
+  .msg.agent{align-self:flex-start; background:var(--card); border:1px solid var(--sand-deep); border-bottom-right-radius:4px}
+  .msg.agent.pending{color:var(--ink-soft); font-style:italic}
+
+  .trace{
+    align-self:flex-start; max-width:85%; font-size:.75rem; color:var(--ink-soft);
+    background:transparent; padding:0 4px;
+  }
+  .trace .tool-chip{
+    display:inline-block; background:#E7DFCB; color:var(--palm-deep); padding:2px 9px;
+    border-radius:10px; margin-inline-end:6px; margin-bottom:4px; font-family:'Space Grotesk',sans-serif;
+    font-size:.72rem;
+  }
+
+  .suggestions{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+  .suggestion{
+    font-size:.78rem; background:var(--card); border:1px solid var(--sand-deep); color:var(--ink);
+    padding:7px 12px; border-radius:16px; cursor:pointer;
+  }
+  .suggestion:hover{background:var(--sand-deep)}
+
+  .input-row{display:flex; gap:8px; padding-top:10px; border-top:1px solid var(--sand-deep)}
+  #userInput{
+    flex:1; padding:12px; border:1.5px solid var(--sand-deep); border-radius:10px;
+    font-family:inherit; font-size:.9rem;
+  }
+  #userInput:focus{outline:2px solid var(--palm); outline-offset:1px}
+  #sendBtn{
+    padding:0 20px; background:var(--palm); color:#fff; border:none; border-radius:10px;
+    font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif;
+  }
+  #sendBtn:hover{background:var(--palm-deep)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/static/index.html" class="back">← Back to overview</a>
+  <header>
+    <h1>🤖 Farm Assistant</h1>
+    <p class="sub">An agentic AI with real access to your palm registry — it decides on its own which farm data to look up.</p>
+  </header>
+
+  <div class="suggestions">
+    <div class="suggestion" onclick="ask('Which palms need attention right now?')">Which palms need attention?</div>
+    <div class="suggestion" onclick="ask('Give me a summary of all my palms')">Summarize all my palms</div>
+    <div class="suggestion" onclick="ask('What is the history of Palm-A12?')">History of Palm-A12</div>
+  </div>
+
+  <div id="chatLog"></div>
+
+  <div class="input-row">
+    <input type="text" id="userInput" placeholder="Ask about your palms…" onkeydown="if(event.key==='Enter') sendMessage()">
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+let conversationHistory = [];
+
+function addMessage(text, role){
+  const log = document.getElementById('chatLog');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  return div;
+}
+
+function addTrace(trace){
+  if(!trace || !trace.length) return;
+  const log = document.getElementById('chatLog');
+  const div = document.createElement('div');
+  div.className = 'trace';
+  div.innerHTML = '🔧 ' + trace.map(t => `<span class="tool-chip">${t.tool}${Object.keys(t.args||{}).length ? '(' + JSON.stringify(t.args).replace(/"/g,'') + ')' : ''}</span>`).join('');
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function ask(text){
+  document.getElementById('userInput').value = text;
+  sendMessage();
+}
+
+async function sendMessage(){
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  addMessage(text, 'user');
+  const pending = addMessage('Thinking…', 'agent pending');
+
+  const form = new FormData();
+  form.append('message', text);
+  form.append('history', JSON.stringify(conversationHistory));
+
+  try{
+    const res = await fetch('/agent/chat', { method:'POST', body: form });
+    const data = await res.json();
+
+    pending.remove();
+    addTrace(data.trace);
+    addMessage(data.answer, 'agent');
+
+    // نحدّث سجل المحادثة عشان الوكيل يفتكر السياق بالسؤال الجاي
+    conversationHistory.push({ role:'user', parts:[{text}] });
+    conversationHistory.push({ role:'model', parts:[{text: data.answer}] });
+  }catch(err){
+    pending.remove();
+    addMessage('Could not reach the assistant: ' + err, 'agent');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NakhlaGuard — Run a Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
+    --palm:#1F5C4A; --palm-deep:#123A2E; --date:#B8752E; --date-light:#D99A55;
+    --card:#FBF9F3;
+    --healthy:#2E8B57; --early:#D9822B; --moderate:#C1650E; --advanced:#A63D40;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
+    min-height:100vh; padding:32px 20px;
+  }
+  h1,h2{font-family:'Space Grotesk',sans-serif}
+  .wrap{max-width:520px; margin:0 auto}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:18px}
+  .card{background:var(--card); border-radius:16px; padding:28px; border-top:4px solid var(--date)}
+  h1{font-size:1.5rem; margin-bottom:6px; color:var(--palm-deep)}
+  .sub{color:var(--ink-soft); font-size:.92rem; margin-bottom:24px}
+
+  label{display:block; font-weight:600; font-size:.85rem; margin:16px 0 6px; color:var(--ink)}
+  input[type=file], input[type=text], input[type=number]{
+    width:100%; padding:11px; border:1.5px solid var(--sand-deep); border-radius:8px;
+    font-family:inherit; background:#fff; font-size:.9rem;
+  }
+  input:focus{outline:2px solid var(--palm); outline-offset:1px}
+
+  button{
+    margin-top:22px; width:100%; padding:14px; background:var(--palm); color:#fff;
+    border:none; border-radius:8px; font-size:.98rem; font-weight:700; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; transition:background .15s;
+  }
+  button:hover{background:var(--palm-deep)}
+
+  #result{margin-top:22px; padding:20px; border-radius:12px; background:#fff; display:none; border:1px solid var(--sand-deep)}
+  .badge{display:inline-block; padding:5px 14px; border-radius:20px; font-weight:700; color:#fff; font-size:.85rem}
+  .b-healthy{background:var(--healthy)} .b-early{background:var(--early)}
+  .b-moderate{background:var(--moderate)} .b-advanced{background:var(--advanced)}
+  .rec{white-space:pre-wrap; margin-top:14px; line-height:1.7; font-size:.9rem; color:var(--ink-soft)}
+  .rec h4{font-family:'Space Grotesk',sans-serif; color:var(--palm-deep); font-size:.95rem; margin:16px 0 6px; white-space:normal}
+  .rec h4:first-child{margin-top:0}
+  .report-badge{
+    display:inline-block; background:var(--date); color:var(--ink); font-size:.72rem;
+    font-weight:700; padding:2px 10px; border-radius:12px; margin-top:12px;
+  }
+  .prob-row{display:flex; justify-content:space-between; font-size:.85rem; margin-top:5px; color:var(--ink-soft)}
+  .score-line{font-size:.85rem; color:var(--ink-soft); margin-top:6px}
+  .nav-link{display:block; text-align:center; font-size:.85rem; color:var(--palm-deep); margin-top:14px}
+  .loc-row{display:flex; gap:8px; align-items:flex-start}
+  .loc-row input{flex:1}
+  .loc-btn{
+    margin-top:0; width:auto; padding:11px 14px; background:var(--date); color:var(--ink);
+    font-size:.85rem; white-space:nowrap;
+  }
+  .loc-btn:hover{background:var(--date-light)}
+  .loc-status{font-size:.78rem; color:var(--ink-soft); margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/static/index.html" class="back">← Back to overview</a>
+  <div class="card">
+    <h1>Run a live test</h1>
+    <p class="sub">Upload a trunk audio recording (WAV) and see the model classify it instantly.</p>
+
+    <label>Palm ID</label>
+    <input type="text" id="palmId" list="savedPalms" placeholder="e.g. Palm-A12" value="Palm-A12">
+    <datalist id="savedPalms"></datalist>
+
+    <label>Location (auto-captured, or type it yourself)</label>
+    <div class="loc-row">
+      <input type="text" id="location" placeholder="Tap the button to auto-detect →">
+      <button type="button" class="loc-btn" onclick="useMyLocation('location','locStatus')">📍 Use current</button>
+    </div>
+    <div class="loc-status" id="locStatus"></div>
+
+    <label>Additional description (optional)</label>
+    <input type="text" id="notes" placeholder="e.g. near the well, tall old palm by the fence">
+
+    <label>Trunk audio recording (WAV)</label>
+    <input type="file" id="audioFile" accept="audio/*">
+
+    <label>Image-based infestation probability (optional, 0–1)</label>
+    <input type="number" id="imgProb" min="0" max="1" step="0.05" placeholder="e.g. 0.6">
+
+    <button onclick="analyze()">Analyze now</button>
+
+    <div id="result"></div>
+    <a href="/static/palms.html" class="nav-link">View full palm registry →</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = "";
+const CLASS_MAP = {
+  "سليم":"healthy","مبكرة":"early","متوسطة":"moderate","متقدمة":"advanced"
+};
+const CLASS_LABEL = {
+  healthy:"Healthy", early:"Early stage", moderate:"Moderate", advanced:"Advanced"
+};
+
+// يلتقط موقع GPS الحالي من متصفح الجهاز تلقائيًا بدل الكتابة اليدوية
+function useMyLocation(inputId, statusId){
+  const status = document.getElementById(statusId);
+  if(!navigator.geolocation){
+    status.textContent = 'Geolocation is not supported on this device.';
+    return;
+  }
+  status.textContent = 'Detecting location…';
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(5);
+      const lon = pos.coords.longitude.toFixed(5);
+      document.getElementById(inputId).value = `${lat}, ${lon}`;
+      status.textContent = '📍 Location captured';
+    },
+    (err) => { status.textContent = 'Could not get location: ' + err.message; },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// يحمّل قائمة النخيل المسجّلة مسبقًا لتسهيل الاختيار بدل الكتابة كل مرة
+async function loadSavedPalms(){
+  try{
+    const res = await fetch('/palms');
+    const data = await res.json();
+    const datalist = document.getElementById('savedPalms');
+    datalist.innerHTML = data.palms.map(p => `<option value="${p.palm_id}">${p.location || ''}</option>`).join('');
+  }catch(e){ /* صامت - القائمة اختيارية فقط */ }
+}
+loadSavedPalms();
+
+// يحوّل عناوين ## القادمة من التقرير الكامل إلى عناوين HTML منسّقة
+function formatReport(text){
+  return text
+    .split('\n')
+    .map(line => line.trim().startsWith('##')
+      ? `<h4>${line.replace(/^##\s*/, '')}</h4>`
+      : line)
+    .join('\n');
+}
+
+async function analyze(){
+  const palmId = document.getElementById('palmId').value || 'Test-Palm';
+  const location = document.getElementById('location').value;
+  const notes = document.getElementById('notes').value;
+  const fileInput = document.getElementById('audioFile');
+  const imgProb = document.getElementById('imgProb').value;
+  const resultDiv = document.getElementById('result');
+
+  if(!fileInput.files.length){ alert('Please upload an audio file first.'); return; }
+
+  const form = new FormData();
+  form.append('audio', fileInput.files[0]);
+  form.append('palm_id', palmId);
+  if(location) form.append('location', location);
+  if(notes) form.append('notes', notes);
+  if(imgProb) form.append('image_infested_probability', imgProb);
+
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = 'Analyzing…';
+
+  try{
+    const res = await fetch(`${API_BASE}/predict-full`, { method:'POST', body: form });
+    const data = await res.json();
+
+    const clsAr = data.fusion_result.final_class;
+    const cls = CLASS_MAP[clsAr] || 'healthy';
+
+    let probsHtml = Object.entries(data.audio_result.probabilities)
+      .map(([k,v]) => `<div class="prob-row"><span>${CLASS_LABEL[CLASS_MAP[k]] || k}</span><span>${(v*100).toFixed(0)}%</span></div>`)
+      .join('');
+
+    const reportLabel = data.needs_attention
+      ? '<span class="report-badge">Full treatment report</span>'
+      : '';
+
+    resultDiv.innerHTML = `
+      <div>Result: <span class="badge b-${cls}">${CLASS_LABEL[cls]}</span></div>
+      ${data.location ? `<div class="score-line">📍 ${data.location}</div>` : ''}
+      <div class="score-line">Combined risk score: ${(data.fusion_result.final_score*100).toFixed(0)}%</div>
+      <div style="margin-top:10px">${probsHtml}</div>
+      ${reportLabel}
+      <div class="rec">${formatReport(data.recommendation)}</div>
+    `;
+    loadSavedPalms();
+  }catch(err){
+    resultDiv.innerHTML = 'Could not reach the server: ' + err;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+scikit-learn
+scipy
+numpy
+joblib
+httpx
+pyserial
+requests

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NakhlaGuard — Farm Assistant (Agentic AI)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
@@ -14,14 +14,24 @@
   *{box-sizing:border-box; margin:0; padding:0}
   body{
     font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
-    min-height:100vh; padding:24px 16px; display:flex; flex-direction:column;
+    min-height:100vh; padding:0 16px 24px; display:flex; flex-direction:column;
   }
+  body.rtl{font-family:'Tajawal',sans-serif; direction:rtl}
+  body.rtl h1{font-family:'Tajawal',sans-serif}
   h1{font-family:'Space Grotesk',sans-serif}
   .wrap{max-width:600px; margin:0 auto; width:100%; display:flex; flex-direction:column; flex:1}
-  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:12px}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin:12px 0}
   header{margin-bottom:14px}
   h1{font-size:1.3rem; color:var(--palm-deep); margin-bottom:4px}
   .sub{color:var(--ink-soft); font-size:.87rem}
+
+  #langToggle{
+    position:fixed; top:14px; right:14px; z-index:1000; width:auto; margin:0;
+    background:var(--ink); border:1px solid rgba(237,230,214,.35); color:var(--sand);
+    padding:7px 16px; border-radius:20px; font-size:.78rem; cursor:pointer; font-family:inherit;
+    box-shadow:0 2px 10px rgba(0,0,0,.3);
+  }
+  #langToggle:hover{border-color:var(--sand)}
 
   #chatLog{
     flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px;
@@ -29,7 +39,9 @@
   }
   .msg{max-width:85%; padding:12px 15px; border-radius:14px; font-size:.9rem; line-height:1.6}
   .msg.user{align-self:flex-end; background:var(--palm); color:#fff; border-bottom-left-radius:4px}
+  body.rtl .msg.user{align-self:flex-end; border-bottom-left-radius:14px; border-bottom-right-radius:4px}
   .msg.agent{align-self:flex-start; background:var(--card); border:1px solid var(--sand-deep); border-bottom-right-radius:4px}
+  body.rtl .msg.agent{border-bottom-right-radius:14px; border-bottom-left-radius:4px}
   .msg.agent.pending{color:var(--ink-soft); font-style:italic}
 
   .trace{
@@ -59,33 +71,54 @@
     padding:0 20px; background:var(--palm); color:#fff; border:none; border-radius:10px;
     font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif;
   }
+  body.rtl #sendBtn{font-family:'Tajawal',sans-serif}
   #sendBtn:hover{background:var(--palm-deep)}
 </style>
 </head>
 <body>
+<button id="langToggle" onclick="toggleLang()">العربية</button>
 <div class="wrap">
-  <a href="/static/index.html" class="back">← Back to overview</a>
+  <a href="/index.html" class="back" data-en="← Back to overview" data-ar="← رجوع للصفحة الرئيسية">← Back to overview</a>
   <header>
-    <h1>🤖 Farm Assistant</h1>
-    <p class="sub">An agentic AI with real access to your palm registry — it decides on its own which farm data to look up.</p>
+    <h1 data-en="🤖 Farm Assistant" data-ar="🤖 مساعد المزرعة">🤖 Farm Assistant</h1>
+    <p class="sub" data-en="An agentic AI with real access to your palm registry — it decides on its own which farm data to look up." data-ar="ذكاء اصطناعي توكيلي يملك وصولًا حقيقيًا إلى سجل نخيلك — يقرر بنفسه أي بيانات يبحث عنها.">An agentic AI with real access to your palm registry — it decides on its own which farm data to look up.</p>
   </header>
 
-  <div class="suggestions">
-    <div class="suggestion" onclick="ask('Which palms need attention right now?')">Which palms need attention?</div>
-    <div class="suggestion" onclick="ask('Give me a summary of all my palms')">Summarize all my palms</div>
-    <div class="suggestion" onclick="ask('What is the history of Palm-A12?')">History of Palm-A12</div>
-  </div>
+  <div class="suggestions" id="suggestions"></div>
 
   <div id="chatLog"></div>
 
   <div class="input-row">
-    <input type="text" id="userInput" placeholder="Ask about your palms…" onkeydown="if(event.key==='Enter') sendMessage()">
-    <button id="sendBtn" onclick="sendMessage()">Send</button>
+    <input type="text" id="userInput" data-en-ph="Ask about your palms…" data-ar-ph="اسأل عن نخيلك…" placeholder="Ask about your palms…" onkeydown="if(event.key==='Enter') sendMessage()">
+    <button id="sendBtn" onclick="sendMessage()" data-en="Send" data-ar="أرسل">Send</button>
   </div>
 </div>
 
 <script>
 let conversationHistory = [];
+
+const SUGGESTIONS = {
+  en: [
+    "Which palms need attention right now?",
+    "Give me a summary of all my palms",
+    "What is the history of Palm-A12?",
+  ],
+  ar: [
+    "أي نخيل تحتاج عناية الآن؟",
+    "أعطني ملخص كل نخيلي",
+    "ما تاريخ فحص Palm-A12؟",
+  ],
+};
+const UI_TEXT = {
+  en: { thinking:"Thinking…", error:"Could not reach the assistant: " },
+  ar: { thinking:"جاري التفكير…", error:"تعذّر الوصول للمساعد: " },
+};
+
+function renderSuggestions(){
+  const lang = getLang();
+  const box = document.getElementById('suggestions');
+  box.innerHTML = SUGGESTIONS[lang].map(q => `<div class="suggestion" onclick="ask(this.textContent)">${q}</div>`).join('');
+}
 
 function addMessage(text, role){
   const log = document.getElementById('chatLog');
@@ -113,17 +146,20 @@ function ask(text){
 }
 
 async function sendMessage(){
+  const lang = getLang();
+  const t = UI_TEXT[lang];
   const input = document.getElementById('userInput');
   const text = input.value.trim();
   if(!text) return;
   input.value = '';
 
   addMessage(text, 'user');
-  const pending = addMessage('Thinking…', 'agent pending');
+  const pending = addMessage(t.thinking, 'agent pending');
 
   const form = new FormData();
   form.append('message', text);
   form.append('history', JSON.stringify(conversationHistory));
+  form.append('language', lang);
 
   try{
     const res = await fetch('/agent/chat', { method:'POST', body: form });
@@ -138,9 +174,29 @@ async function sendMessage(){
     conversationHistory.push({ role:'model', parts:[{text: data.answer}] });
   }catch(err){
     pending.remove();
-    addMessage('Could not reach the assistant: ' + err, 'agent');
+    addMessage(t.error + err, 'agent');
   }
 }
+
+// ---------- تبديل اللغة (عربي/إنجليزي) - مشترك عبر كل صفحات الموقع ----------
+function getLang(){ return localStorage.getItem('nakhlaguard-lang') || 'en'; }
+function setLang(lang){
+  localStorage.setItem('nakhlaguard-lang', lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('rtl', lang === 'ar');
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'ar' ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+  });
+  document.querySelectorAll('[data-en-ph]').forEach(el => {
+    el.placeholder = lang === 'ar' ? el.getAttribute('data-ar-ph') : el.getAttribute('data-en-ph');
+  });
+  const btn = document.getElementById('langToggle');
+  if(btn) btn.textContent = lang === 'ar' ? 'English' : 'العربية';
+  renderSuggestions();
+}
+function toggleLang(){ setLang(getLang() === 'ar' ? 'en' : 'ar'); }
+setLang(getLang());
 </script>
 </body>
 </html>

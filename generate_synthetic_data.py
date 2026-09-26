@@ -77,7 +77,9 @@ def generate_sample(cls, rng, snr_jitter=True):
     return audio.astype(np.float32)
 
 
-def build_dataset(n_per_class=60, seed=42, out_dir="/home/claude/nakhla/data/raw"):
+def build_dataset(n_per_class=60, seed=42, out_dir=None):
+    if out_dir is None:
+        out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_raw")
     rng = np.random.default_rng(seed)
     os.makedirs(out_dir, exist_ok=True)
     manifest = []

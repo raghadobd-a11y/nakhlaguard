@@ -1,9 +1,16 @@
 """
-تطبيق "نخلة" - كشف مبكر لإصابة النخيل بسوسة النخيل الحمراء
-==========================================================
+تطبيق NakhlaGuard - كشف مبكر لإصابة النخيل بسوسة النخيل الحمراء
+================================================================
 نفس نمط مشروعك بصيرة: FastAPI + Gemini + واجهة ويب بسيطة.
 
+ملاحظة هيكلية: كل ملفات المشروع (بايثون وHTML) بمستوى واحد بدون
+مجلدات فرعية (عشان تتوافق مع الرفع المباشر على GitHub عبر السحب
+والإفلات بدون مشاكل مجلدات). كل صفحة HTML تُخدَّم مباشرة من الجذر
+(/index.html بدل /static/index.html).
+
 المسارات:
+- GET  /                  : الصفحة الرئيسية (index.html)
+- GET  /<اسم>.html        : أي صفحة ويب بالمشروع (test, dashboard, palms, agent)
 - POST /predict-audio     : يرفع تسجيل صوتي -> شدة الإصابة + الثقة
 - POST /predict-full      : صوت (+ صورة اختياري + موقع) -> دمج + توصية Gemini
                             (تقرير كامل تلقائيًا لو الحالة تستدعي عناية)
@@ -16,10 +23,9 @@
                             حاجة لتحديث الصفحة يدويًا
 - POST /agent/chat        : وكيل ذكاء اصطناعي (Agentic AI) - يجاوب أسئلة
                             المزارع عن نخيله عبر استدعاء أدوات حقيقية على
-                            قاعدة البيانات (مو نص مبرمج مسبقًا) - شوفي model/agent.py
+                            قاعدة البيانات (مو نص مبرمج مسبقًا) - شوفي agent.py
 """
 import os
-import sys
 import json
 import tempfile
 import sqlite3
@@ -27,22 +33,57 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "model"))
+# كل الملفات بنفس مجلد app.py، فـ Python يضيف هذا المجلد لمسار
+# البحث تلقائيًا - ما نحتاج أي sys.path.append إضافي
 from predict import predict_severity_from_file  # noqa: E402
 from fusion import fuse_audio_image, get_gemini_recommendation  # noqa: E402
 from agent import run_agent  # noqa: E402
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "nakhla.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "nakhla.db")
 
 app = FastAPI(title="NakhlaGuard API")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+
+
+def _html(filename):
+    """يرجّع صفحة HTML من نفس مجلد المشروع (بدون الحاجة لمجلد static/ منفصل)."""
+    return FileResponse(os.path.join(BASE_DIR, filename))
+
+
+@app.get("/")
+def serve_home():
+    return _html("index.html")
+
+
+@app.get("/index.html")
+def serve_index():
+    return _html("index.html")
+
+
+@app.get("/test.html")
+def serve_test():
+    return _html("test.html")
+
+
+@app.get("/dashboard.html")
+def serve_dashboard():
+    return _html("dashboard.html")
+
+
+@app.get("/palms.html")
+def serve_palms_page():
+    return _html("palms.html")
+
+
+@app.get("/agent.html")
+def serve_agent_page():
+    return _html("agent.html")
 
 
 def init_db():
@@ -201,11 +242,6 @@ async def broadcast_alert(payload: dict):
         connected_clients.remove(d)
 
 
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "NakhlaGuard API - شوفي /static/index.html للواجهة"}
-
-
 @app.post("/predict-audio")
 async def predict_audio(audio: UploadFile = File(...)):
     suffix = os.path.splitext(audio.filename)[1] or ".wav"
@@ -226,11 +262,12 @@ async def predict_full(
     location: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     image_infested_probability: Optional[float] = Form(None),
+    language: str = Form("en"),
 ):
     """
     التحليل الكامل: صوت (إلزامي) + موقع النخلة (اختياري، يُسجَّل تلقائيًا)
-    + وصف إضافي (اختياري) + احتمال إصابة من الصورة (اختياري) -> دمج +
-    توصية/تقرير كامل + حفظ بالسجل.
+    + وصف إضافي (اختياري) + احتمال إصابة من الصورة (اختياري) + لغة الجواب
+    (en/ar) -> دمج + توصية/تقرير كامل + حفظ بالسجل.
     """
     suffix = os.path.splitext(audio.filename)[1] or ".wav"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -248,7 +285,7 @@ async def predict_full(
 
     fusion_result = fuse_audio_image(audio_result, image_infested_probability)
     history = get_history(palm_id)
-    recommendation = await get_gemini_recommendation(fusion_result, palm_id, history, saved_location)
+    recommendation = await get_gemini_recommendation(fusion_result, palm_id, history, saved_location, language)
     save_reading(palm_id, fusion_result["final_class"], fusion_result["final_score"])
 
     # إرسال إشعار فوري للمزارع لو الحالة وصلت لمستوى خطورة يستدعي تنبيه
@@ -297,7 +334,7 @@ async def register_palm(
 
 
 # الأدوات الحقيقية اللي الوكيل الذكي يقدر يستدعيها - نفس أسماء
-# TOOLS المعرّفة بـ model/agent.py بالضبط
+# TOOLS المعرّفة بـ agent.py بالضبط
 AGENT_TOOL_EXECUTOR = {
     "list_palms": lambda: list_palms(),
     "get_palm_details": lambda palm_id: get_palm_details(palm_id),
@@ -306,16 +343,19 @@ AGENT_TOOL_EXECUTOR = {
 
 
 @app.post("/agent/chat")
-async def agent_chat(message: str = Form(...), history: Optional[str] = Form(None)):
+async def agent_chat(message: str = Form(...), history: Optional[str] = Form(None), language: str = Form("en")):
     """
     وكيل ذكاء اصطناعي (Agentic AI): يجاوب أسئلة المزارع عن نخيله باستدعاء
-    أدوات حقيقية على قاعدة البيانات بنفسه - انظري model/agent.py للحلقة الكاملة.
+    أدوات حقيقية على قاعدة البيانات بنفسه - انظري agent.py للحلقة الكاملة.
     """
     parsed_history = json.loads(history) if history else []
-    result = await run_agent(message, AGENT_TOOL_EXECUTOR, parsed_history)
+    result = await run_agent(message, AGENT_TOOL_EXECUTOR, parsed_history, language=language)
     return JSONResponse(result)
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Render (وخدمات الاستضافة المشابهة) تحدد رقم المنفذ تلقائيًا عبر
+    # متغير بيئة PORT - نستخدمه لو موجود، وإلا نرجع للمنفذ 8000 للتشغيل المحلي
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

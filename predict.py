@@ -69,7 +69,7 @@ if __name__ == "__main__":
     import glob
 
     # اختبار سريع على عينات محاكاة موجودة
-    raw_dir = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+    raw_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_raw")
     sample_files = sorted(glob.glob(os.path.join(raw_dir, "*.npy")))[:4]
     for f in sample_files:
         result = predict_severity_from_file(f)

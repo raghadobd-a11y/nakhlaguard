@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NakhlaGuard — Palm Registry</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
@@ -15,14 +15,24 @@
   *{box-sizing:border-box; margin:0; padding:0}
   body{
     font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
-    min-height:100vh; padding:28px 20px;
+    min-height:100vh; padding:0 0 28px;
   }
+  body.rtl{font-family:'Tajawal',sans-serif; direction:rtl}
+  body.rtl h1, body.rtl h2{font-family:'Tajawal',sans-serif}
   h1,h2{font-family:'Space Grotesk',sans-serif}
-  .wrap{max-width:640px; margin:0 auto}
-  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:14px}
+  .wrap{max-width:640px; margin:0 auto; padding:0 20px}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin:14px 0}
   header{margin-bottom:18px}
   h1{font-size:1.35rem; color:var(--palm-deep); margin-bottom:4px}
   .sub{color:var(--ink-soft); font-size:.9rem}
+
+  #langToggle{
+    position:fixed; top:14px; right:14px; z-index:1000; width:auto; margin:0;
+    background:var(--ink); border:1px solid rgba(237,230,214,.35); color:var(--sand);
+    padding:7px 16px; border-radius:20px; font-size:.78rem; cursor:pointer; font-family:inherit;
+    box-shadow:0 2px 10px rgba(0,0,0,.3);
+  }
+  #langToggle:hover{border-color:var(--sand)}
 
   .add-card{
     background:var(--card); border-radius:14px; padding:20px; margin-bottom:24px;
@@ -51,6 +61,7 @@
     border-radius:8px; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif;
     font-size:.88rem;
   }
+  body.rtl button{font-family:'Tajawal',sans-serif}
   button:hover{background:var(--palm-deep)}
 
   .list-title{font-size:.85rem; font-weight:600; color:var(--ink-soft); margin-bottom:10px; text-transform:uppercase; letter-spacing:.02em}
@@ -59,12 +70,18 @@
     display:flex; justify-content:space-between; align-items:center; gap:12px;
     border-right:5px solid #ccc;
   }
+  body.rtl .palm-card{border-right:none; border-left:5px solid #ccc}
   .palm-card.healthy{border-right-color:var(--healthy)}
   .palm-card.early{border-right-color:var(--early)}
   .palm-card.moderate{border-right-color:var(--moderate)}
   .palm-card.advanced{border-right-color:var(--advanced)}
+  body.rtl .palm-card.healthy{border-left-color:var(--healthy)}
+  body.rtl .palm-card.early{border-left-color:var(--early)}
+  body.rtl .palm-card.moderate{border-left-color:var(--moderate)}
+  body.rtl .palm-card.advanced{border-left-color:var(--advanced)}
   .palm-card .info{flex:1}
   .palm-id{font-family:'Space Grotesk',sans-serif; font-weight:700}
+  body.rtl .palm-id{font-family:'Tajawal',sans-serif}
   .location{font-size:.85rem; color:var(--ink-soft); margin-top:2px}
   .last-check{font-size:.75rem; color:#999; margin-top:4px}
   .badge{padding:4px 12px; border-radius:20px; font-weight:700; font-size:.78rem; color:#fff; white-space:nowrap}
@@ -76,98 +93,123 @@
 </style>
 </head>
 <body>
+<button id="langToggle" onclick="toggleLang()">العربية</button>
 <div class="wrap">
-  <a href="/static/index.html" class="back">← Back to overview</a>
+  <a href="/index.html" class="back" data-en="← Back to overview" data-ar="← رجوع للصفحة الرئيسية">← Back to overview</a>
   <header>
-    <h1>🌴 Palm Registry</h1>
-    <p class="sub">Track every palm's location and health status in one place.</p>
+    <h1 data-en="🌴 Palm Registry" data-ar="🌴 سجل النخيل">🌴 Palm Registry</h1>
+    <p class="sub" data-en="Track every palm's location and health status in one place." data-ar="تابع موقع وحالة كل نخلة بمكان واحد.">Track every palm's location and health status in one place.</p>
   </header>
 
   <div class="add-card">
-    <h2>Register a palm</h2>
+    <h2 data-en="Register a palm" data-ar="سجّل نخلة">Register a palm</h2>
     <div class="row">
       <div>
-        <label>Palm ID</label>
-        <input type="text" id="newPalmId" placeholder="e.g. Palm-B07">
+        <label data-en="Palm ID" data-ar="رقم النخلة">Palm ID</label>
+        <input type="text" id="newPalmId" data-en-ph="e.g. Palm-B07" data-ar-ph="مثلاً Palm-B07" placeholder="e.g. Palm-B07">
       </div>
       <div>
-        <label>Location</label>
+        <label data-en="Location" data-ar="الموقع">Location</label>
         <div class="loc-row">
-          <input type="text" id="newLocation" placeholder="Tap 📍 to auto-detect">
+          <input type="text" id="newLocation" data-en-ph="Tap 📍 to auto-detect" data-ar-ph="اضغط 📍 للالتقاط التلقائي" placeholder="Tap 📍 to auto-detect">
           <button type="button" class="loc-btn" onclick="useMyLocation('newLocation','newLocStatus')">📍</button>
         </div>
         <div class="loc-status" id="newLocStatus"></div>
       </div>
     </div>
-    <label style="margin-top:10px">Additional description (optional)</label>
-    <input type="text" id="newNotes" placeholder="e.g. planted 2019, irrigation line A">
-    <button onclick="addPalm()">Add palm</button>
+    <label style="margin-top:10px" data-en="Additional description (optional)" data-ar="وصف إضافي (اختياري)">Additional description (optional)</label>
+    <input type="text" id="newNotes" data-en-ph="e.g. planted 2019, irrigation line A" data-ar-ph="مثلاً زُرعت 2019، خط ري A" placeholder="e.g. planted 2019, irrigation line A">
+    <button onclick="addPalm()" data-en="Add palm" data-ar="أضف النخلة">Add palm</button>
   </div>
 
-  <div class="list-title">Registered palms</div>
-  <div id="palmList"><div class="empty">Loading…</div></div>
+  <div class="list-title" data-en="Registered palms" data-ar="النخيل المسجّلة">Registered palms</div>
+  <div id="palmList"><div class="empty" data-en="Loading…" data-ar="جاري التحميل…">Loading…</div></div>
 </div>
 
 <script>
 const CLASS_MAP = { "سليم":"healthy","مبكرة":"early","متوسطة":"moderate","متقدمة":"advanced" };
-const CLASS_LABEL = { healthy:"Healthy", early:"Early stage", moderate:"Moderate", advanced:"Advanced" };
+const CLASS_LABEL = {
+  en: { healthy:"Healthy", early:"Early stage", moderate:"Moderate", advanced:"Advanced" },
+  ar: { healthy:"سليم", early:"مبكرة", moderate:"متوسطة", advanced:"متقدمة" },
+};
+const UI_TEXT = {
+  en: { geoUnsupported:"Geolocation is not supported on this device.", detecting:"Detecting…",
+        captured:"📍 Captured", failed:"Failed: ", notTested:"Not tested yet",
+        noneYet:"No palms registered yet — add your first one above.",
+        loadError:"Could not load the registry. Is the server running?",
+        noLocation:"No location set", lastChecked:"Last checked: ",
+        needFields:"Please enter both a Palm ID and a location.",
+        saveError:"Could not save the palm. Is the server running?" },
+  ar: { geoUnsupported:"الجهاز لا يدعم تحديد الموقع.", detecting:"جاري التحديد…",
+        captured:"📍 تم التحديد", failed:"فشل: ", notTested:"لم تُفحص بعد",
+        noneYet:"ما فيه نخيل مسجّلة بعد — أضف أول وحدة فوق.",
+        loadError:"تعذّر تحميل السجل. هل السيرفر شغّال؟",
+        noLocation:"ما فيه موقع محدد", lastChecked:"آخر فحص: ",
+        needFields:"أدخل رقم النخلة والموقع.",
+        saveError:"تعذّر حفظ النخلة. هل السيرفر شغّال؟" },
+};
 
 // يلتقط موقع GPS الحالي من متصفح الجهاز تلقائيًا بدل الكتابة اليدوية
 function useMyLocation(inputId, statusId){
   const status = document.getElementById(statusId);
+  const t = UI_TEXT[getLang()];
   if(!navigator.geolocation){
-    status.textContent = 'Geolocation is not supported on this device.';
+    status.textContent = t.geoUnsupported;
     return;
   }
-  status.textContent = 'Detecting…';
+  status.textContent = t.detecting;
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const lat = pos.coords.latitude.toFixed(5);
       const lon = pos.coords.longitude.toFixed(5);
       document.getElementById(inputId).value = `${lat}, ${lon}`;
-      status.textContent = '📍 Captured';
+      status.textContent = t.captured;
     },
-    (err) => { status.textContent = 'Failed: ' + err.message; },
+    (err) => { status.textContent = t.failed + err.message; },
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
 
 async function loadPalms(){
   const container = document.getElementById('palmList');
+  const lang = getLang();
+  const t = UI_TEXT[lang];
+  const labels = CLASS_LABEL[lang];
   try{
     const res = await fetch('/palms');
     const data = await res.json();
     if(!data.palms.length){
-      container.innerHTML = '<div class="empty">No palms registered yet — add your first one above.</div>';
+      container.innerHTML = `<div class="empty">${t.noneYet}</div>`;
       return;
     }
     container.innerHTML = data.palms.map(p => {
       const statusKey = CLASS_MAP[p.latest_status] || null;
       const badge = statusKey
-        ? `<span class="badge ${statusKey}">${CLASS_LABEL[statusKey]}</span>`
-        : `<span class="badge unchecked">Not tested yet</span>`;
-      const lastCheck = p.latest_check ? new Date(p.latest_check).toLocaleDateString('en-US') : '';
+        ? `<span class="badge ${statusKey}">${labels[statusKey]}</span>`
+        : `<span class="badge unchecked">${t.notTested}</span>`;
+      const lastCheck = p.latest_check ? new Date(p.latest_check).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US') : '';
       return `
         <div class="palm-card ${statusKey || ''}">
           <div class="info">
             <div class="palm-id">🌴 ${p.palm_id}</div>
-            <div class="location">${p.location || 'No location set'}</div>
-            ${lastCheck ? `<div class="last-check">Last checked: ${lastCheck}</div>` : ''}
+            <div class="location">${p.location || t.noLocation}</div>
+            ${lastCheck ? `<div class="last-check">${t.lastChecked}${lastCheck}</div>` : ''}
           </div>
           ${badge}
         </div>`;
     }).join('');
   }catch(e){
-    container.innerHTML = '<div class="empty">Could not load the registry. Is the server running?</div>';
+    container.innerHTML = `<div class="empty">${t.loadError}</div>`;
   }
 }
 
 async function addPalm(){
+  const t = UI_TEXT[getLang()];
   const palmId = document.getElementById('newPalmId').value.trim();
   const location = document.getElementById('newLocation').value.trim();
   const notes = document.getElementById('newNotes').value.trim();
 
-  if(!palmId || !location){ alert('Please enter both a Palm ID and a location.'); return; }
+  if(!palmId || !location){ alert(t.needFields); return; }
 
   const form = new FormData();
   form.append('palm_id', palmId);
@@ -181,11 +223,31 @@ async function addPalm(){
     document.getElementById('newNotes').value = '';
     loadPalms();
   }catch(e){
-    alert('Could not save the palm. Is the server running?');
+    alert(t.saveError);
   }
 }
 
 loadPalms();
+
+// ---------- تبديل اللغة (عربي/إنجليزي) - مشترك عبر كل صفحات الموقع ----------
+function getLang(){ return localStorage.getItem('nakhlaguard-lang') || 'en'; }
+function setLang(lang){
+  localStorage.setItem('nakhlaguard-lang', lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('rtl', lang === 'ar');
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'ar' ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+  });
+  document.querySelectorAll('[data-en-ph]').forEach(el => {
+    el.placeholder = lang === 'ar' ? el.getAttribute('data-ar-ph') : el.getAttribute('data-en-ph');
+  });
+  const btn = document.getElementById('langToggle');
+  if(btn) btn.textContent = lang === 'ar' ? 'English' : 'العربية';
+  loadPalms(); // نعيد تحميل القائمة عشان الشارات والتواريخ تترجم فورًا
+}
+function toggleLang(){ setLang(getLang() === 'ar' ? 'en' : 'ar'); }
+setLang(getLang());
 </script>
 </body>
 </html>

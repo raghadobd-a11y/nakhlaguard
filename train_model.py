@@ -12,7 +12,6 @@ RandomForest على خصائص Mel-spectrogram + خصائص صوتية إحصا�
 (مراقبة / علاج وقائي / تدخل عاجل) بدل تنبيه ثنائي بسيط.
 """
 import os
-import sys
 import json
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -20,14 +19,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 import joblib
 
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "data"))
-
 from features import extract_features, FEATURE_NAMES  # noqa: E402
 from generate_synthetic_data import build_dataset, CLASSES, CLASS_IDS  # noqa: E402
 
-RAW_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "nakhla_model.joblib")
+# كل الملفات بمجلد واحد، فبيانات المحاكاة تنحفظ بمجلد فرعي محلي بسيط
+# (data_raw) بدل الاعتماد على هيكل مجلدات متعدد المستويات
+RAW_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_raw")
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nakhla_model.joblib")
 
 
 def load_or_build_dataset():

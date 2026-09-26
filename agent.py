@@ -19,7 +19,7 @@ import os
 from gemini_client import call_gemini
 from severity_labels import anglicize
 
-AGENT_SYSTEM_PROMPT = """You are "Farm Assistant" - an AI agent inside the \
+AGENT_SYSTEM_PROMPT_EN = """You are "Farm Assistant" - an AI agent inside the \
 NakhlaGuard system that helps a palm farmer track the health of their palms.
 
 You have real tools that connect you to the actual farm data:
@@ -37,8 +37,28 @@ If the question is general knowledge about Red Palm Weevil (not about data \
 registered in this system), answer directly from your own agricultural \
 knowledge without calling any tool.
 
-Always respond in English only, regardless of the language the farmer wrote \
-in - be concise, clear, and practically useful."""
+Respond in English only, regardless of the language the farmer wrote in - be \
+concise, clear, and practically useful."""
+
+AGENT_SYSTEM_PROMPT_AR = """أنت "مساعد نخلة" - وكيل ذكاء اصطناعي داخل نظام
+NakhlaGuard يساعد مزارع النخيل على متابعة حالة نخيله.
+
+لديك أدوات حقيقية تصلك ببيانات المزرعة الفعلية:
+- list_palms: كل النخيل المسجَّلة، مواقعها، وحالة آخر فحص لكل واحدة
+- get_palm_details: التفاصيل الكاملة لنخلة معينة (الموقع، الملاحظات، وتاريخ
+  جميع الفحوصات التي أُجريت لها)
+- palms_needing_attention: فقط النخيل التي حالتها الحالية متوسطة أو
+  متقدمة (تحتاج إلى تدخل المزارع الآن)
+
+قاعدة أساسية: أي سؤال عن بيانات فعلية بالمزرعة (عدد النخيل، موقع نخلة
+معينة، حالة نخلة معينة، أي نخلة تحتاج إلى عناية) - يجب استخدام الأداة
+المناسبة قبل الإجابة. لا تخمّن أو تختلق أرقامًا أو مواقع أبدًا.
+
+إذا كان السؤال عامًا عن سوسة النخيل الحمراء (وليس عن بيانات مسجَّلة
+بالنظام)، أجب مباشرة من معرفتك الزراعية دون استدعاء أي أداة.
+
+أجب بالعربية الفصحى المبسطة فقط، بغض النظر عن لغة سؤال المزارع - بإيجاز
+ووضوح وأسلوب عملي يفيده فعليًا."""
 
 TOOLS = [{
     "function_declarations": [
@@ -81,10 +101,11 @@ TOOLS = [{
 }]
 
 
-async def run_agent(user_message, tool_executor, history=None, max_steps=5):
+async def run_agent(user_message, tool_executor, history=None, max_steps=5, language="en"):
     """
     حلقة الوكيل (Agent Loop):
-    1. يرسل رسالة المزارع لـ Gemini مع تعريف الأدوات المتاحة
+    1. يرسل رسالة المزارع لـ Gemini مع تعريف الأدوات المتاحة، بنظام
+       التعليمات المناسب للغة المطلوبة (language: "en" أو "ar")
     2. لو النموذج قرر يستدعي أداة (functionCall) -> ننفذها فعليًا
        بقاعدة البيانات الحقيقية، ونرجّع نتيجتها له (functionResponse)
     3. يكرر هذا لين النموذج يوصل لجواب نهائي (نص) أو نوصل للحد الأقصى
@@ -100,12 +121,20 @@ async def run_agent(user_message, tool_executor, history=None, max_steps=5):
                  الاستدعاء - مفيد لعرض "كيف فكّر الوكيل" بالعرض التقديمي
     }
     """
+    system_prompt = AGENT_SYSTEM_PROMPT_AR if language == "ar" else AGENT_SYSTEM_PROMPT_EN
+
+    if language == "ar":
+        no_key_msg = "⚠️ لم يتم ضبط GEMINI_API_KEY - المساعد الذكي يحتاج المفتاح ليعمل."
+        fail_prefix = "⚠️ تعذّر الاتصال بالمساعد الذكي حاليًا"
+        stuck_msg = "⚠️ الوكيل استخدم عدة أدوات بدون التوصل لجواب نهائي - جربي إعادة صياغة السؤال."
+    else:
+        no_key_msg = "⚠️ GEMINI_API_KEY is not set - the AI assistant needs it to work."
+        fail_prefix = "⚠️ Could not reach the AI assistant right now"
+        stuck_msg = "⚠️ The agent used several tools without reaching a final answer - try rephrasing your question."
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return {
-            "answer": "⚠️ GEMINI_API_KEY is not set - the AI assistant needs it to work.",
-            "trace": [],
-        }
+        return {"answer": no_key_msg, "trace": []}
 
     contents = list(history) if history else []
     contents.append({"role": "user", "parts": [{"text": user_message}]})
@@ -114,7 +143,7 @@ async def run_agent(user_message, tool_executor, history=None, max_steps=5):
 
     for _ in range(max_steps):
         payload = {
-            "system_instruction": {"parts": [{"text": AGENT_SYSTEM_PROMPT}]},
+            "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": contents,
             "tools": TOOLS,
         }
@@ -122,10 +151,7 @@ async def run_agent(user_message, tool_executor, history=None, max_steps=5):
             data = await call_gemini(payload, api_key)
         except Exception as e:
             print(f"[NakhlaGuard Agent] call failed: {type(e).__name__}: {e}")
-            return {
-                "answer": f"⚠️ Could not reach the AI assistant right now ({type(e).__name__}).",
-                "trace": trace,
-            }
+            return {"answer": f"{fail_prefix} ({type(e).__name__}).", "trace": trace}
 
         candidate = data["candidates"][0]["content"]
         parts = candidate.get("parts", [])
@@ -152,9 +178,10 @@ async def run_agent(user_message, tool_executor, history=None, max_steps=5):
             except Exception as e:
                 tool_result = {"error": str(e)}
 
-        # نترجم أي تصنيف شدة عربي (سليم/مبكرة/متوسطة/متقدمة) للإنجليزي
-        # قبل ما يوصل النموذج - يضمن ما يتسرب نص عربي بجواب الوكيل
-        tool_result = anglicize(tool_result)
+        # بالإنجليزي: نترجم أي تصنيف شدة عربي (سليم/مبكرة...) للإنجليزي
+        # قبل ما يوصل النموذج. بالعربي: نبقيها كما هي (أطبع لجواب عربي).
+        if language == "en":
+            tool_result = anglicize(tool_result)
 
         contents.append({
             "role": "user",
@@ -166,7 +193,4 @@ async def run_agent(user_message, tool_executor, history=None, max_steps=5):
             }],
         })
 
-    return {
-        "answer": "⚠️ The agent used several tools without reaching a final answer - try rephrasing your question.",
-        "trace": trace,
-    }
+    return {"answer": stuck_msg, "trace": trace}

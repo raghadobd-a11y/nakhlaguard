@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NakhlaGuard — Farmer Alert Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
@@ -15,16 +15,26 @@
   *{box-sizing:border-box; margin:0; padding:0}
   body{
     font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
-    min-height:100vh; padding:28px 20px;
+    min-height:100vh; padding:0 0 28px;
   }
+  body.rtl{font-family:'Tajawal',sans-serif; direction:rtl}
+  body.rtl h1{font-family:'Tajawal',sans-serif}
   h1,h2{font-family:'Space Grotesk',sans-serif}
-  .wrap{max-width:600px; margin:0 auto}
-  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:14px}
+  .wrap{max-width:600px; margin:0 auto; padding:0 20px}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin:14px 0}
   header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px}
   h1{font-size:1.35rem; color:var(--palm-deep)}
   .status{display:flex; align-items:center; gap:6px; font-size:.82rem; color:var(--ink-soft)}
   .dot{width:9px; height:9px; border-radius:50%; background:#ccc}
   .dot.on{background:var(--palm)} .dot.off{background:var(--advanced)}
+
+  #langToggle{
+    position:fixed; top:14px; right:14px; z-index:1000; width:auto; margin:0;
+    background:var(--ink); border:1px solid rgba(237,230,214,.35); color:var(--sand);
+    padding:7px 16px; border-radius:20px; font-size:.78rem; cursor:pointer; font-family:inherit;
+    box-shadow:0 2px 10px rgba(0,0,0,.3);
+  }
+  #langToggle:hover{border-color:var(--sand)}
 
   .empty{text-align:center; color:var(--ink-soft); padding:60px 20px; font-size:.92rem}
 
@@ -32,8 +42,11 @@
     background:var(--card); border-radius:14px; padding:18px; margin-bottom:12px;
     border-right:5px solid #ccc; animation:slideIn .3s ease-out;
   }
+  body.rtl .alert-card{border-right:none; border-left:5px solid #ccc}
   .alert-card.moderate{border-right-color:var(--moderate)}
   .alert-card.advanced{border-right-color:var(--advanced)}
+  body.rtl .alert-card.moderate{border-left-color:var(--moderate)}
+  body.rtl .alert-card.advanced{border-left-color:var(--advanced)}
   @keyframes slideIn{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:translateY(0)}}
 
   .alert-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px}
@@ -41,46 +54,60 @@
   .badge.moderate{background:var(--moderate)} .badge.advanced{background:var(--advanced)}
   .time{font-size:.75rem; color:var(--ink-soft)}
   .palm-id{font-weight:700; font-family:'Space Grotesk',sans-serif}
+  body.rtl .palm-id{font-family:'Tajawal',sans-serif}
   .rec{font-size:.87rem; line-height:1.7; white-space:pre-wrap; margin-top:8px; color:var(--ink-soft)}
+  .nav-link{display:block; text-align:center; font-size:.85rem; color:var(--palm-deep); margin-top:16px}
 
   #enableSound{
     display:block; width:100%; padding:12px; margin-bottom:16px; border:none;
     border-radius:10px; background:var(--palm); color:#fff; font-weight:700; cursor:pointer;
     font-family:'Space Grotesk',sans-serif;
   }
+  body.rtl #enableSound{font-family:'Tajawal',sans-serif}
   #enableSound:hover{background:var(--palm-deep)}
 </style>
 </head>
 <body>
+<button id="langToggle" onclick="toggleLang()">العربية</button>
 <div class="wrap">
-  <a href="/static/index.html" class="back">← Back to overview</a>
+  <a href="/index.html" class="back" data-en="← Back to overview" data-ar="← رجوع للصفحة الرئيسية">← Back to overview</a>
   <header>
-    <h1>🔔 Farmer alert dashboard</h1>
-    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Connecting…</span></div>
+    <h1 data-en="🔔 Farmer alert dashboard" data-ar="🔔 لوحة إشعارات المزارع">🔔 Farmer alert dashboard</h1>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText" data-en="Connecting…" data-ar="جاري الاتصال…">Connecting…</span></div>
   </header>
 
-  <button id="enableSound">Enable sound &amp; browser notifications</button>
+  <button id="enableSound" data-en="Enable sound &amp; browser notifications" data-ar="فعّل الصوت وإشعارات المتصفح">Enable sound &amp; browser notifications</button>
 
   <div id="alertsContainer">
-    <div class="empty" id="emptyState">No alerts yet — all monitored palms are healthy ✅</div>
+    <div class="empty" id="emptyState" data-en="No alerts yet — all monitored palms are healthy ✅" data-ar="لا توجد إشعارات حتى الآن — كل النخيل المراقَبة سليمة ✅">No alerts yet — all monitored palms are healthy ✅</div>
   </div>
-  <a href="/static/agent.html" class="nav-link">Ask the AI Assistant →</a>
-  <a href="/static/palms.html" class="nav-link">View full palm registry →</a>
+  <a href="/agent.html" class="nav-link" data-en="Ask the AI Assistant →" data-ar="اسأل المساعد الذكي ←">Ask the AI Assistant →</a>
+  <a href="/palms.html" class="nav-link" data-en="View full palm registry →" data-ar="عرض سجل النخيل كامل ←">View full palm registry →</a>
 </div>
-
-<style>
-  .nav-link{display:block; text-align:center; font-size:.85rem; color:var(--palm-deep); margin-top:16px}
-</style>
 
 <script>
 const API_HOST = window.location.host;
 let soundEnabled = false;
 const CLASS_MAP = { "سليم":"healthy","مبكرة":"early","متوسطة":"moderate","متقدمة":"advanced" };
+const CLASS_LABEL = {
+  en: { healthy:"Healthy", early:"Early stage", moderate:"Moderate", advanced:"Advanced" },
+  ar: { healthy:"سليم", early:"مبكرة", moderate:"متوسطة", advanced:"متقدمة" },
+};
+const UI_TEXT = {
+  en: { enabled:"✅ Notifications enabled", connected:"Connected — waiting for alerts",
+        disconnected:"Disconnected — reconnecting…", risk:"risk score:",
+        alertTitle: (id) => `⚠️ NakhlaGuard alert: ${id}`,
+        alertBody: (sev) => `Severity: ${sev} — action recommended` },
+  ar: { enabled:"✅ الإشعارات مفعّلة", connected:"متصل — بانتظار الإشعارات",
+        disconnected:"انقطع الاتصال — جاري إعادة المحاولة…", risk:"نسبة الخطورة:",
+        alertTitle: (id) => `⚠️ تنبيه NakhlaGuard: ${id}`,
+        alertBody: (sev) => `الشدة: ${sev} — يُنصح بالتدخل` },
+};
 
 document.getElementById('enableSound').onclick = async () => {
   if ("Notification" in window) { await Notification.requestPermission(); }
   soundEnabled = true;
-  document.getElementById('enableSound').textContent = "✅ Notifications enabled";
+  document.getElementById('enableSound').textContent = UI_TEXT[getLang()].enabled;
 };
 
 function playBeep(){
@@ -97,17 +124,19 @@ function playBeep(){
 function addAlertCard(data){
   document.getElementById('emptyState')?.remove();
   const container = document.getElementById('alertsContainer');
+  const lang = getLang();
   const severityKey = CLASS_MAP[data.severity] || 'moderate';
+  const severityLabel = CLASS_LABEL[lang][severityKey] || data.severity;
   const card = document.createElement('div');
   card.className = `alert-card ${severityKey}`;
-  const time = new Date(data.timestamp).toLocaleString('en-US');
+  const time = new Date(data.timestamp).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-US');
   card.innerHTML = `
     <div class="alert-top">
       <span class="palm-id">🌴 ${data.palm_id}</span>
-      <span class="badge ${severityKey}">${data.severity}</span>
+      <span class="badge ${severityKey}">${severityLabel}</span>
     </div>
     ${data.location ? `<div class="time">📍 ${data.location}</div>` : ''}
-    <div class="time">${time} — risk score: ${(data.score*100).toFixed(0)}%</div>
+    <div class="time">${time} — ${UI_TEXT[lang].risk} ${(data.score*100).toFixed(0)}%</div>
     <div class="rec">${data.recommendation}</div>
   `;
   container.prepend(card);
@@ -115,8 +144,8 @@ function addAlertCard(data){
   if(soundEnabled){
     playBeep();
     if (Notification.permission === "granted") {
-      new Notification(`⚠️ NakhlaGuard alert: ${data.palm_id}`, {
-        body: `Severity: ${data.severity} — action recommended`,
+      new Notification(UI_TEXT[lang].alertTitle(data.palm_id), {
+        body: UI_TEXT[lang].alertBody(severityLabel),
       });
     }
   }
@@ -128,11 +157,11 @@ function connect(){
 
   ws.onopen = () => {
     document.getElementById('statusDot').className = 'dot on';
-    document.getElementById('statusText').textContent = 'Connected — waiting for alerts';
+    document.getElementById('statusText').textContent = UI_TEXT[getLang()].connected;
   };
   ws.onclose = () => {
     document.getElementById('statusDot').className = 'dot off';
-    document.getElementById('statusText').textContent = 'Disconnected — reconnecting…';
+    document.getElementById('statusText').textContent = UI_TEXT[getLang()].disconnected;
     setTimeout(connect, 3000);
   };
   ws.onmessage = (event) => {
@@ -142,6 +171,22 @@ function connect(){
 }
 
 connect();
+
+// ---------- تبديل اللغة (عربي/إنجليزي) - مشترك عبر كل صفحات الموقع ----------
+function getLang(){ return localStorage.getItem('nakhlaguard-lang') || 'en'; }
+function setLang(lang){
+  localStorage.setItem('nakhlaguard-lang', lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('rtl', lang === 'ar');
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'ar' ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+  });
+  const btn = document.getElementById('langToggle');
+  if(btn) btn.textContent = lang === 'ar' ? 'English' : 'العربية';
+}
+function toggleLang(){ setLang(getLang() === 'ar' ? 'en' : 'ar'); }
+setLang(getLang());
 </script>
 </body>
 </html>

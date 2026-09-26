@@ -1,87 +1,96 @@
-# 🌴 نخلة (Nakhla) — كشف مبكر لسوسة النخيل الحمراء
+# 🌴 NakhlaGuard — Early Red Palm Weevil Detection
 
-نموذج أولي (Prototype) كامل: توليد بيانات → استخراج خصائص → تدريب →
-استدلال → دمج (Fusion) → توصية ذكية → واجهة ويب → مسار هاردوير منخفض
-التكلفة (ESP32 + Piezo).
+Full working prototype: data generation → feature extraction → training →
+inference → fusion → AI recommendation → agentic AI assistant → web UI →
+low-cost hardware path (Arduino + sound sensor).
 
-## طريقة التشغيل السريعة
+**Note on structure**: every file sits in one flat folder (no subfolders) so
+the whole project can be dragged straight into a GitHub repo without any
+folder-upload issues.
+
+## Quick start
 
 ```bash
-cd nakhla
 pip install -r requirements.txt --break-system-packages
 
-# 1) تدريب النموذج (يولّد بيانات محاكاة تلقائيًا أول مرة)
-python model/train_model.py
+# 1) Train the model (auto-generates simulated training data the first time)
+python train_model.py
 
-# 2) تشغيل السيرفر
+# 2) Set your Gemini key (needed for recommendations + the AI assistant)
+export GEMINI_API_KEY="your-key-here"      # Windows PowerShell: $env:GEMINI_API_KEY="your-key"
+
+# 3) Run the server
 python app.py
-# افتحي المتصفح على: http://localhost:8000/static/index.html
+# Open: http://localhost:8000/
 ```
 
-لو حابة تجربين الاستدلال مباشرة بدون سيرفر:
+Without a Gemini key, the server still runs and returns a placeholder
+recommendation instead of failing.
+
+To test inference directly without the server:
 ```bash
-python model/predict.py
+python predict.py
 ```
 
-ضعي مفتاح Gemini قبل التشغيل عشان تشتغل التوصيات الذكية فعليًا:
-```bash
-export GEMINI_API_KEY="مفتاحك"
-```
-بدون المفتاح، السيرفر يرجّع توصية نصية بديلة (Fallback) بدل ما يفشل.
-
-## هيكل المشروع
+## Project files
 
 ```
-nakhla/
-├── data/
-│   └── generate_synthetic_data.py   # مولّد بيانات صوتية محاكاة
-├── model/
-│   ├── features.py                  # استخراج خصائص (Mel-spectrogram مبسّط)
-│   ├── train_model.py               # تدريب RandomForest (4 فئات شدة)
-│   ├── predict.py                   # الاستدلال على ملف صوتي جديد
-│   └── fusion.py                    # دمج صوت+صورة + توصية Gemini
-├── arduino/
-│   └── nakhla_sensor.ino            # كود ESP32 + مستشعر بيزو
-├── static/
-│   └── index.html                   # واجهة رفع واختبار بسيطة
-├── app.py                           # سيرفر FastAPI الرئيسي
-└── requirements.txt
+app.py                     # Main FastAPI server (all routes)
+predict.py                 # Inference on a new audio file
+features.py                # Mel-spectrogram-style feature extraction
+train_model.py             # Trains the RandomForest severity classifier
+generate_synthetic_data.py # Simulated training audio generator
+fusion.py                  # Audio+image fusion + Gemini recommendation/report
+agent.py                   # Agentic AI: tool-calling loop over farm data
+gemini_client.py           # Shared Gemini client with retry + model fallback
+severity_labels.py         # Arabic->English label translation for AI output
+serial_bridge.py           # PC-side bridge for the Arduino Uno version
+nakhla_sensor.ino           # ESP32 + WiFi version of the sensor firmware
+nakhla_sensor_uno.ino       # Arduino Uno + USB serial version
+index.html / test.html / dashboard.html / palms.html / agent.html
+requirements.txt
 ```
 
-## لماذا هذا التصميم بالذات؟ (نقاط الأصالة)
+## Deploying on Render
 
-| العنصر | الأبحاث المنشورة (KAUST، جامعة الأمير سلطان...) | نخلة |
+- Build Command: `pip install -r requirements.txt && python train_model.py`
+- Start Command: `python app.py`
+- Environment variable: `GEMINI_API_KEY` = your key
+
+## Why this design? (originality points)
+
+| Element | Published research (KAUST, Prince Sultan University...) | NakhlaGuard |
 |---|---|---|
-| المستشعر | ألياف ضوئية موزّعة (DAS) — تكلفة عالية، تركيب متخصص | بيزو + ESP32 — أقل من 100 ريال، تركيب ذاتي |
-| المخرج | تصنيف ثنائي (مصاب/سليم) كنتيجة أكاديمية | 4 مستويات شدة → قرار عملي متدرج |
-| الوسائط | صوت فقط | دمج صوت + صورة (Fusion) لرفع الثقة |
-| بعد القرار | يتوقف عند التصنيف | توصية علاج + تقدير اقتصادي عبر Gemini |
-| التتبع | تجربة لحظية واحدة | سجل تاريخي لكل نخلة (SQLite) لرسم منحنى تطور الحالة |
+| Sensor | Distributed fiber-optic sensing — expensive, specialist install | Low-cost sound sensor + microcontroller, self-installed |
+| Output | Binary classification (infested/healthy) as an academic result | 4 severity stages → a practical, graded decision |
+| Modality | Audio only | Audio + image fusion for higher confidence |
+| After detection | Stops at classification | Treatment plan + economic estimate + live alert |
+| Interaction | One-shot reading | Agentic AI assistant that queries the farm data itself |
 
-**مهم بالعرض التقديمي**: اذكري صراحة إنك اطّلعتي على أبحاث KAUST
-وجامعة الأمير سلطان المنشورة بنفس المجال، وإن مساهمة "نخلة" تحديدًا
-هي تحويل الفكرة البحثية (دقيقة لكن مكلفة) إلى أداة ميدانية رخيصة
-وقابلة للاستخدام الفعلي من قبل المزارع نفسه، مع طبقات قرار عملية
-(الشدة + الاقتصاد) ما وردت بتلك الأبحاث.
+**Important for the presentation**: mention explicitly that you reviewed the
+published KAUST and Prince Sultan University research in this area, and that
+NakhlaGuard's contribution is turning that research (accurate but expensive)
+into a cheap, field-usable tool the farmer can operate themselves.
 
-## قيود النموذج الأولي (كوني شفافة بها أمام اللجنة)
+## Known limitations (be transparent about these with the judges)
 
-1. **البيانات محاكاة (Synthetic)** — ما فيه datasets صوتية عامة
-   لسوسة النخيل، فالمولّد ينتج إشارات تحاكي فيزياء المشكلة (نبضات
-   دورية بنطاق 100-800Hz فوق ضجيج خلفية) لإثبات صحة خط الأنابيب
-   التقني بالكامل. الخطوة التالية الحقيقية: تسجيل عينات من مزرعة
-   فعلية (حتى لو عدد قليل) واستبدال بيانات `data/raw/`.
-2. **RandomForest بدل CNN عميق** — لعدم توفر TensorFlow/PyTorch
-   ببيئة التطوير، استُخدم نموذج كلاسيكي على خصائص مستخرجة يدويًا؛
-   هذا أسلوب معروف وفعّال جدًا مع بيانات محدودة، ويقدر يُستبدل
-   بـ CNN لاحقًا بسهولة (نفس واجهة `predict_severity_from_array`).
-3. **كود الأردوينو غير مُختبر على جهاز فعلي** — يمثّل التصميم
-   الهندسي والمنطق الصحيح، لكن يحتاج ضبط دقيق (معايرة الحساسية،
-   تثبيت البيزو، جودة عزل الضوضاء) عند التنفيذ الفعلي بمزرعة.
+1. **Training data is simulated** — no public audio dataset exists for Red
+   Palm Weevil detection, so the generator produces signals that mimic the
+   underlying physics (periodic pulses in the 100-800Hz range over
+   background noise) to prove the full technical pipeline works. The real
+   next step is recording samples from an actual farm.
+2. **RandomForest instead of a deep CNN** — since TensorFlow/PyTorch wasn't
+   available in the development environment, a classical model on
+   hand-extracted features was used instead; this is a well-known, effective
+   approach with limited data, and can be swapped for a CNN later behind the
+   same `predict_severity_from_array` interface.
+3. **Arduino code is untested on real hardware** — it represents the correct
+   engineering design, but needs field calibration (sensor sensitivity,
+   mounting, noise isolation) once built.
 
-## خطوات مستقبلية
+## Future steps
 
-- استبدال البيانات المحاكاة بتسجيلات حقيقية من مزرعة تعاونية
-- تجربة CNN فعلي (MobileNetV2 على Spectrogram كصورة) لو توفرت بيئة GPU
-- إرسال multipart حقيقي من الأردوينو (مطابق لـ UploadFile في FastAPI)
-- لوحة تحكم لعرض خريطة المزرعة بالكامل مع حالة كل نخلة (كما نوقشت)
+- Replace simulated data with real recordings from a partner farm
+- Try a real CNN (MobileNetV2 on the spectrogram as an image) given a GPU
+- Send real multipart data from the Arduino (matching FastAPI's UploadFile)
+- Expand the farm dashboard into a full map view of every palm's status

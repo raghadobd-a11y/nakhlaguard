@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NakhlaGuard — Early Red Palm Weevil Detection</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
@@ -19,12 +19,22 @@
     line-height:1.65; font-size:16px;
   }
   h1,h2,h3{font-family:'Space Grotesk',sans-serif; letter-spacing:-0.01em}
+  body.rtl{font-family:'Tajawal',sans-serif; direction:rtl}
+  body.rtl h1, body.rtl h2, body.rtl h3, body.rtl .stat .num, body.rtl .compare h4{font-family:'Tajawal',sans-serif; letter-spacing:0}
   .wrap{max-width:920px;margin:0 auto;padding:0 24px}
   a{color:inherit}
 
+  #langToggle{
+    position:fixed; top:14px; right:14px; z-index:1000; width:auto; margin:0;
+    background:var(--ink); border:1px solid rgba(237,230,214,.35); color:var(--sand);
+    padding:7px 16px; border-radius:20px; font-size:.78rem; cursor:pointer; font-family:inherit;
+    box-shadow:0 2px 10px rgba(0,0,0,.3);
+  }
+  #langToggle:hover{border-color:var(--sand)}
+
   .hero{
     background:radial-gradient(ellipse at 30% -10%, var(--palm) 0%, var(--palm-deep) 55%, var(--ink) 100%);
-    color:var(--sand); padding:72px 0 56px; position:relative; overflow:hidden;
+    color:var(--sand); padding:56px 0; position:relative; overflow:hidden;
   }
   .hero-grid{
     display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center;
@@ -35,9 +45,10 @@
     font-size:.8rem; color:var(--date-light); font-weight:600; margin-bottom:14px;
     display:flex; align-items:center; gap:8px;
   }
-  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--date-light)}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--date-light); flex-shrink:0}
 
-  .hero h1{font-size:2.6rem; line-height:1.08; margin-bottom:16px}
+  .hero h1{font-size:2.6rem; line-height:1.15; margin-bottom:16px}
+  body.rtl .hero h1{font-size:2.3rem}
   .hero h1 span{color:var(--date-light)}
   .hero p.tag{font-size:1.05rem; color:#D8E2DC; max-width:440px; margin-bottom:28px}
 
@@ -45,7 +56,7 @@
   .btn{
     display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:8px;
     font-weight:600; font-size:.92rem; text-decoration:none; border:1.5px solid transparent;
-    transition:transform .15s ease, background .15s ease;
+    transition:transform .15s ease, background .15s ease; font-family:inherit;
   }
   .btn:hover{transform:translateY(-1px)}
   .btn-fill{background:var(--date); color:var(--ink)}
@@ -71,6 +82,7 @@
     margin-bottom:8px;
   }
   h2{font-size:1.55rem; margin-bottom:16px; color:var(--palm-deep)}
+  body.rtl h2{font-size:1.45rem}
   p.lead{color:var(--ink-soft); max-width:640px; font-size:.98rem}
 
   .stat-row{display:flex; gap:16px; flex-wrap:wrap; margin-top:22px}
@@ -105,6 +117,7 @@
   .compare li{font-size:.88rem; color:var(--ink-soft)}
   .compare .col.us li{color:var(--ink)}
   .compare li::before{content:"—"; margin-right:8px; color:var(--date)}
+  body.rtl .compare li::before{margin-right:0; margin-left:8px}
 
   .final{
     background:var(--palm-deep); color:var(--sand); border-radius:16px; padding:40px;
@@ -113,27 +126,42 @@
   .final h2{color:var(--sand)}
   .final p{color:#CBD9D3; margin-bottom:22px}
 
+  .mobile-teaser{
+    display:flex; align-items:center; gap:18px; background:var(--card);
+    border:1.5px dashed var(--date); border-radius:14px; padding:20px 24px;
+  }
+  .mobile-teaser-icon{font-size:2rem; flex-shrink:0}
+  .mobile-teaser-title{font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--palm-deep); font-size:1rem; margin-bottom:4px}
+  body.rtl .mobile-teaser-title{font-family:'Tajawal',sans-serif}
+  .mobile-teaser-sub{color:var(--ink-soft); font-size:.88rem; line-height:1.6}
+  @media(max-width:520px){ .mobile-teaser{flex-direction:column; text-align:center} }
+
   footer{text-align:center; padding:28px 0; color:var(--ink-soft); font-size:.8rem}
 </style>
 </head>
 <body>
 
+<button id="langToggle" onclick="toggleLang()">العربية</button>
+
 <div class="hero">
   <div class="wrap hero-grid">
     <div>
-      <div class="eyebrow"><span class="dot"></span>SAIF 2026 — Marine, Agricultural &amp; Food Tech Track</div>
-      <h1>Listening to palm trees <span>before it's too late.</span></h1>
-      <p class="tag">NakhlaGuard detects Red Palm Weevil infestations from trunk vibration sound, weeks before any visible symptom appears — using a sensor that costs under 30 USD.</p>
+      <div class="eyebrow"><span class="dot"></span><span data-en="SAIF 2026 — Marine, Agricultural &amp; Food Tech Track" data-ar="سيف 2026 — مسار التقنيات البحرية والزراعية والغذائية">SAIF 2026 — Marine, Agricultural &amp; Food Tech Track</span></div>
+      <h1 data-en="Listening to palm trees <span>before it's too late.</span>" data-ar="نستمع لجذع النخلة <span>قبل ما يفوت الأوان.</span>">Listening to palm trees <span>before it's too late.</span></h1>
+      <p class="tag" data-en="NakhlaGuard detects Red Palm Weevil infestations from trunk vibration sound, weeks before any visible symptom appears — using a sensor that costs under 30 USD." data-ar="NakhlaGuard يكتشف إصابة سوسة النخيل الحمراء من صوت اهتزاز الجذع، بأسابيع قبل ظهور أي عرض خارجي — بمستشعر تكلفته أقل من 30 دولارًا.">NakhlaGuard detects Red Palm Weevil infestations from trunk vibration sound, weeks before any visible symptom appears — using a sensor that costs under 30 USD.</p>
       <div class="cta-row">
-        <a href="/static/test.html" class="btn btn-fill">Run a live test</a>
-        <a href="/static/agent.html" class="btn btn-fill">Ask the AI Assistant</a>
-        <a href="/static/dashboard.html" class="btn btn-line">Farmer alert dashboard</a>
-        <a href="/static/palms.html" class="btn btn-line">Palm registry</a>
+        <a href="/test.html" class="btn btn-fill" data-en="Run a live test" data-ar="جرّب النموذج الآن">Run a live test</a>
+        <a href="/agent.html" class="btn btn-fill" data-en="Ask the AI Assistant" data-ar="اسأل المساعد الذكي">Ask the AI Assistant</a>
+        <a href="/dashboard.html" class="btn btn-line" data-en="Farmer alert dashboard" data-ar="لوحة إشعارات المزارع">Farmer alert dashboard</a>
+        <a href="/palms.html" class="btn btn-line" data-en="Palm registry" data-ar="سجل النخيل">Palm registry</a>
       </div>
     </div>
     <div class="wave-box">
       <div class="wave-bars" id="waveBars"></div>
-      <div class="wave-label"><span>Trunk audio input</span><span>Listening…</span></div>
+      <div class="wave-label">
+        <span data-en="Trunk audio input" data-ar="إدخال صوت الجذع">Trunk audio input</span>
+        <span data-en="Listening…" data-ar="جاري الاستماع…">Listening…</span>
+      </div>
     </div>
   </div>
 </div>
@@ -141,24 +169,24 @@
 <div class="wrap">
 
   <section>
-    <div class="kicker">The problem</div>
-    <h2>By the time you can see it, it's already too late</h2>
-    <p class="lead">
+    <div class="kicker" data-en="The problem" data-ar="المشكلة">The problem</div>
+    <h2 data-en="By the time you can see it, it's already too late" data-ar="حين تظهر العلامات للعين، يكون الوقت قد فات">By the time you can see it, it's already too late</h2>
+    <p class="lead" data-en="Red Palm Weevil larvae feed inside the trunk for months before any external sign appears. Farmers currently rely on manual trunk-tapping, trained sniffer dogs, or waiting for visible damage — by then, the palm is usually beyond saving." data-ar="يرقات سوسة النخيل الحمراء تتغذى داخل الجذع أشهرًا قبل ظهور أي علامة خارجية. المزارعون حاليًا يعتمدون على الطرق اليدوية على الجذع، أو كلاب مدربة، أو انتظار الضرر الظاهر — ووقتها غالبًا يكون فات أوان إنقاذ النخلة.">
       Red Palm Weevil larvae feed inside the trunk for months before any external
       sign appears. Farmers currently rely on manual trunk-tapping, trained sniffer
       dogs, or waiting for visible damage — by then, the palm is usually beyond saving.
     </p>
     <div class="stat-row">
-      <div class="stat"><div class="num">Billions SAR</div><div class="label">annual losses in Saudi Arabia</div></div>
-      <div class="stat"><div class="num">Weeks earlier</div><div class="label">than visible symptoms</div></div>
-      <div class="stat"><div class="num">No cure</div><div class="label">once infestation is advanced</div></div>
+      <div class="stat"><div class="num" data-en="Billions SAR" data-ar="مليارات الريالات">Billions SAR</div><div class="label" data-en="annual losses in Saudi Arabia" data-ar="خسائر سنوية بالسعودية">annual losses in Saudi Arabia</div></div>
+      <div class="stat"><div class="num" data-en="Weeks earlier" data-ar="أسابيع أبكر">Weeks earlier</div><div class="label" data-en="than visible symptoms" data-ar="من ظهور الأعراض">than visible symptoms</div></div>
+      <div class="stat"><div class="num" data-en="No cure" data-ar="بلا علاج">No cure</div><div class="label" data-en="once infestation is advanced" data-ar="بمرحلة الإصابة المتقدمة">once infestation is advanced</div></div>
     </div>
   </section>
 
   <section>
-    <div class="kicker">The solution</div>
-    <h2>A cheap sensor, a trained ear, an instant decision</h2>
-    <p class="lead">
+    <div class="kicker" data-en="The solution" data-ar="الحل">The solution</div>
+    <h2 data-en="A cheap sensor, a trained ear, an instant decision" data-ar="مستشعر رخيص، أذن مدرّبة، وقرار فوري">A cheap sensor, a trained ear, an instant decision</h2>
+    <p class="lead" data-en="NakhlaGuard listens to trunk vibration through a low-cost contact sensor, and a machine learning model trained to recognize the acoustic signature of larvae feeding inside the wood — long before the palm shows any outward sign. The system classifies severity across four stages and sends an instant treatment recommendation." data-ar="NakhlaGuard يستمع لاهتزاز الجذع عبر مستشعر ملامس رخيص، ونموذج تعلم آلي مدرّب على التعرف على البصمة الصوتية لليرقات وهي تتغذى داخل الخشب — قبل أي علامة خارجية بوقت طويل. النظام يصنّف الشدة على أربع مراحل ويرسل توصية علاج فورية.">
       NakhlaGuard listens to trunk vibration through a low-cost contact sensor,
       and a machine learning model trained to recognize the acoustic signature of
       larvae feeding inside the wood — long before the palm shows any outward sign.
@@ -168,20 +196,20 @@
   </section>
 
   <section>
-    <div class="kicker">How it works</div>
-    <h2>From vibration to decision, in seconds</h2>
+    <div class="kicker" data-en="How it works" data-ar="كيف يشتغل">How it works</div>
+    <h2 data-en="From vibration to decision, in seconds" data-ar="من الاهتزاز للقرار، خلال ثوانٍ">From vibration to decision, in seconds</h2>
     <div class="steps">
-      <div class="step"><div class="ghost-num">01</div><div><h3>Listen</h3><p>A low-cost sound sensor is mounted on the trunk, wired to a microcontroller.</p></div></div>
-      <div class="step"><div class="ghost-num">02</div><div><h3>Analyze</h3><p>An AI model reads the frequency pattern and classifies the palm: healthy, early, moderate, or advanced infestation.</p></div></div>
-      <div class="step"><div class="ghost-num">03</div><div><h3>Decide</h3><p>An instant treatment recommendation, with an estimated cost-of-inaction versus cost-of-treatment.</p></div></div>
-      <div class="step"><div class="ghost-num">04</div><div><h3>Alert</h3><p>A real-time notification reaches the farmer the moment a reading crosses a risk threshold.</p></div></div>
+      <div class="step"><div class="ghost-num">01</div><div><h3 data-en="Listen" data-ar="استماع">Listen</h3><p data-en="A low-cost sound sensor is mounted on the trunk, wired to a microcontroller." data-ar="مستشعر صوت رخيص يُثبّت على الجذع، متصل بمتحكم دقيق.">A low-cost sound sensor is mounted on the trunk, wired to a microcontroller.</p></div></div>
+      <div class="step"><div class="ghost-num">02</div><div><h3 data-en="Analyze" data-ar="تحليل">Analyze</h3><p data-en="An AI model reads the frequency pattern and classifies the palm: healthy, early, moderate, or advanced infestation." data-ar="نموذج ذكاء اصطناعي يقرأ نمط الترددات ويصنّف النخلة: سليمة، إصابة مبكرة، متوسطة، أو متقدمة.">An AI model reads the frequency pattern and classifies the palm: healthy, early, moderate, or advanced infestation.</p></div></div>
+      <div class="step"><div class="ghost-num">03</div><div><h3 data-en="Decide" data-ar="قرار">Decide</h3><p data-en="An instant treatment recommendation, with an estimated cost-of-inaction versus cost-of-treatment." data-ar="توصية علاج فورية، مع تقدير لتكلفة التأخير مقابل تكلفة العلاج.">An instant treatment recommendation, with an estimated cost-of-inaction versus cost-of-treatment.</p></div></div>
+      <div class="step"><div class="ghost-num">04</div><div><h3 data-en="Alert" data-ar="تنبيه">Alert</h3><p data-en="A real-time notification reaches the farmer the moment a reading crosses a risk threshold." data-ar="إشعار فوري يوصل للمزارع بمجرد ما تتجاوز القراءة حد الخطورة.">A real-time notification reaches the farmer the moment a reading crosses a risk threshold.</p></div></div>
     </div>
   </section>
 
   <section>
-    <div class="kicker">Agentic AI</div>
-    <h2>Ask it anything about your farm — it looks up the real data itself</h2>
-    <p class="lead">
+    <div class="kicker" data-en="Agentic AI" data-ar="ذكاء اصطناعي توكيلي">Agentic AI</div>
+    <h2 data-en="Ask it anything about your farm — it looks up the real data itself" data-ar="اسأله أي سؤال عن مزرعتك — يبحث عن البيانات الحقيقية بنفسه">Ask it anything about your farm — it looks up the real data itself</h2>
+    <p class="lead" data-en="The Farm Assistant isn't a single canned prompt. It's given real tools — it can query your palm registry, pull one palm's full check history, or list every palm that currently needs attention — and decides on its own, question by question, which tool (if any) to call before answering." data-ar="مساعد المزرعة ليس مجرد سؤال وجواب ثابت، بل يملك أدوات حقيقية — يستطيع الاستعلام عن سجل النخيل، أو استرجاع تاريخ الفحص الكامل لنخلة معينة، أو سرد كل نخلة تحتاج إلى عناية الآن — ويقرر بنفسه، مع كل سؤال، أي أداة (إن احتاج) يستخدمها قبل الإجابة.">
       The Farm Assistant isn't a single canned prompt. It's given real tools —
       it can query your palm registry, pull one palm's full check history, or
       list every palm that currently needs attention — and decides on its own,
@@ -190,39 +218,49 @@
   </section>
 
   <section>
-    <div class="kicker">Why it's different</div>
-    <h2>Built for the field, not the lab</h2>
+    <div class="kicker" data-en="Why it's different" data-ar="ما الذي يميزنا">Why it's different</div>
+    <h2 data-en="Built for the field, not the lab" data-ar="مصمَّم للمزرعة، لا للمختبر">Built for the field, not the lab</h2>
     <div class="compare">
       <div class="col them">
-        <h4>Published research</h4>
+        <h4 data-en="Published research" data-ar="الأبحاث المنشورة">Published research</h4>
         <ul>
-          <li>Distributed fiber-optic sensing — expensive, specialist install</li>
-          <li>Binary output: infested or not</li>
-          <li>Stops at classification</li>
+          <li data-en="Distributed fiber-optic sensing — expensive, specialist install" data-ar="استشعار ألياف ضوئية موزّعة — مكلف، تركيب متخصص">Distributed fiber-optic sensing — expensive, specialist install</li>
+          <li data-en="Binary output: infested or not" data-ar="مخرج ثنائي: مصاب أو سليم بس">Binary output: infested or not</li>
+          <li data-en="Stops at classification" data-ar="يتوقف عند التصنيف">Stops at classification</li>
         </ul>
       </div>
       <div class="col us">
-        <h4>NakhlaGuard</h4>
+        <h4 data-en="NakhlaGuard" data-ar="NakhlaGuard">NakhlaGuard</h4>
         <ul>
-          <li>Low-cost contact sensor + microcontroller, self-installed</li>
-          <li>Four severity stages, not two</li>
-          <li>Treatment plan + economic estimate + live alert</li>
+          <li data-en="Low-cost contact sensor + microcontroller, self-installed" data-ar="مستشعر ملامس رخيص + متحكم دقيق، تركيب ذاتي">Low-cost contact sensor + microcontroller, self-installed</li>
+          <li data-en="Four severity stages, not two" data-ar="أربع مراحل للشدة، لا مرحلتان فقط">Four severity stages, not two</li>
+          <li data-en="Treatment plan + economic estimate + live alert" data-ar="خطة علاج + تقدير اقتصادي + تنبيه فوري">Treatment plan + economic estimate + live alert</li>
         </ul>
       </div>
     </div>
   </section>
 
   <section>
+    <div class="mobile-teaser">
+      <div class="mobile-teaser-icon">📱</div>
+      <div>
+        <div class="mobile-teaser-title" data-en="Mobile app — coming soon" data-ar="تطبيق جوال — قريبًا">Mobile app — coming soon</div>
+        <div class="mobile-teaser-sub" data-en="A dedicated iOS &amp; Android app with push alerts, camera capture, and offline mode is the next step for NakhlaGuard." data-ar="تطبيق جوال مخصص لأنظمة iOS وAndroid بإشعارات فورية، والتقاط بالكاميرا، ووضع بلا اتصال، هو الخطوة القادمة لـNakhlaGuard.">A dedicated iOS &amp; Android app with push alerts, camera capture, and offline mode is the next step for NakhlaGuard.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <div class="final">
-      <h2>See it detect an infestation live</h2>
-      <p>Upload a trunk recording and watch the model classify it in real time.</p>
-      <a href="/static/test.html" class="btn btn-fill">Start the demo</a>
+      <h2 data-en="See it detect an infestation live" data-ar="شاهد كشف الإصابة مباشرة">See it detect an infestation live</h2>
+      <p data-en="Upload a trunk recording and watch the model classify it in real time." data-ar="ارفع تسجيلًا صوتيًا للجذع وشاهد النموذج يصنّفه لحظيًا.">Upload a trunk recording and watch the model classify it in real time.</p>
+      <a href="/test.html" class="btn btn-fill" data-en="Start the demo" data-ar="ابدأ التجربة">Start the demo</a>
     </div>
   </section>
 
 </div>
 
-<footer>NakhlaGuard — built for SAIF 2026, Marine, Agricultural &amp; Food Technologies track</footer>
+<footer data-en="NakhlaGuard — built for SAIF 2026, Marine, Agricultural &amp; Food Technologies track" data-ar="NakhlaGuard — بُني لمسابقة سيف 2026، مسار التقنيات البحرية والزراعية والغذائية">NakhlaGuard — built for SAIF 2026, Marine, Agricultural &amp; Food Technologies track</footer>
 
 <script>
   const bars = document.getElementById('waveBars');
@@ -233,6 +271,25 @@
     bar.style.animationDelay = (i * 0.08) + 's';
     bars.appendChild(bar);
   });
+
+  // ---------- تبديل اللغة (عربي/إنجليزي) - مشترك عبر كل صفحات الموقع ----------
+  function getLang(){ return localStorage.getItem('nakhlaguard-lang') || 'en'; }
+  function setLang(lang){
+    localStorage.setItem('nakhlaguard-lang', lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.body.classList.toggle('rtl', lang === 'ar');
+    document.querySelectorAll('[data-en]').forEach(el => {
+      el.innerHTML = lang === 'ar' ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+    });
+    document.querySelectorAll('[data-en-ph]').forEach(el => {
+      el.placeholder = lang === 'ar' ? el.getAttribute('data-ar-ph') : el.getAttribute('data-en-ph');
+    });
+    const btn = document.getElementById('langToggle');
+    if(btn) btn.textContent = lang === 'ar' ? 'English' : 'العربية';
+  }
+  function toggleLang(){ setLang(getLang() === 'ar' ? 'en' : 'ar'); }
+  setLang(getLang());
 </script>
 
 </body>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NakhlaGuard — Run a Test</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#14201B; --ink-soft:#4A5750; --sand:#EDE6D6; --sand-deep:#E1D8C2;
@@ -16,14 +16,24 @@
   *{box-sizing:border-box; margin:0; padding:0}
   body{
     font-family:'IBM Plex Sans',sans-serif; background:var(--sand); color:var(--ink);
-    min-height:100vh; padding:32px 20px;
+    min-height:100vh; padding:0 0 32px;
   }
+  body.rtl{font-family:'Tajawal',sans-serif; direction:rtl}
+  body.rtl h1, body.rtl h2{font-family:'Tajawal',sans-serif}
   h1,h2{font-family:'Space Grotesk',sans-serif}
-  .wrap{max-width:520px; margin:0 auto}
-  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin-bottom:18px}
+  .wrap{max-width:520px; margin:0 auto; padding:0 20px}
+  .back{display:inline-block; font-size:.85rem; color:var(--palm-deep); text-decoration:none; margin:18px 0}
   .card{background:var(--card); border-radius:16px; padding:28px; border-top:4px solid var(--date)}
   h1{font-size:1.5rem; margin-bottom:6px; color:var(--palm-deep)}
   .sub{color:var(--ink-soft); font-size:.92rem; margin-bottom:24px}
+
+  #langToggle{
+    position:fixed; top:14px; right:14px; z-index:1000; width:auto; margin:0;
+    background:var(--ink); border:1px solid rgba(237,230,214,.35); color:var(--sand);
+    padding:7px 16px; border-radius:20px; font-size:.78rem; cursor:pointer; font-family:inherit;
+    box-shadow:0 2px 10px rgba(0,0,0,.3);
+  }
+  #langToggle:hover{border-color:var(--sand)}
 
   label{display:block; font-weight:600; font-size:.85rem; margin:16px 0 6px; color:var(--ink)}
   input[type=file], input[type=text], input[type=number]{
@@ -37,6 +47,7 @@
     border:none; border-radius:8px; font-size:.98rem; font-weight:700; cursor:pointer;
     font-family:'Space Grotesk',sans-serif; transition:background .15s;
   }
+  body.rtl button{font-family:'Tajawal',sans-serif}
   button:hover{background:var(--palm-deep)}
 
   #result{margin-top:22px; padding:20px; border-radius:12px; background:#fff; display:none; border:1px solid var(--sand-deep)}
@@ -45,6 +56,7 @@
   .b-moderate{background:var(--moderate)} .b-advanced{background:var(--advanced)}
   .rec{white-space:pre-wrap; margin-top:14px; line-height:1.7; font-size:.9rem; color:var(--ink-soft)}
   .rec h4{font-family:'Space Grotesk',sans-serif; color:var(--palm-deep); font-size:.95rem; margin:16px 0 6px; white-space:normal}
+  body.rtl .rec h4{font-family:'Tajawal',sans-serif}
   .rec h4:first-child{margin-top:0}
   .report-badge{
     display:inline-block; background:var(--date); color:var(--ink); font-size:.72rem;
@@ -64,36 +76,37 @@
 </style>
 </head>
 <body>
+<button id="langToggle" onclick="toggleLang()">العربية</button>
 <div class="wrap">
-  <a href="/static/index.html" class="back">← Back to overview</a>
+  <a href="/index.html" class="back" data-en="← Back to overview" data-ar="← رجوع للصفحة الرئيسية">← Back to overview</a>
   <div class="card">
-    <h1>Run a live test</h1>
-    <p class="sub">Upload a trunk audio recording (WAV) and see the model classify it instantly.</p>
+    <h1 data-en="Run a live test" data-ar="جرّب النموذج الآن">Run a live test</h1>
+    <p class="sub" data-en="Upload a trunk audio recording (WAV) and see the model classify it instantly." data-ar="ارفع تسجيلًا صوتيًا للجذع (WAV) وشاهد تصنيف النموذج فورًا.">Upload a trunk audio recording (WAV) and see the model classify it instantly.</p>
 
-    <label>Palm ID</label>
-    <input type="text" id="palmId" list="savedPalms" placeholder="e.g. Palm-A12" value="Palm-A12">
+    <label data-en="Palm ID" data-ar="رقم النخلة">Palm ID</label>
+    <input type="text" id="palmId" list="savedPalms" data-en-ph="e.g. Palm-A12" data-ar-ph="مثلاً Palm-A12" placeholder="e.g. Palm-A12" value="Palm-A12">
     <datalist id="savedPalms"></datalist>
 
-    <label>Location (auto-captured, or type it yourself)</label>
+    <label data-en="Location (auto-captured, or type it yourself)" data-ar="الموقع (يُلتقط تلقائيًا، أو اكتبه بنفسك)">Location (auto-captured, or type it yourself)</label>
     <div class="loc-row">
-      <input type="text" id="location" placeholder="Tap the button to auto-detect →">
-      <button type="button" class="loc-btn" onclick="useMyLocation('location','locStatus')">📍 Use current</button>
+      <input type="text" id="location" data-en-ph="Tap the button to auto-detect →" data-ar-ph="اضغط الزر للالتقاط التلقائي ←" placeholder="Tap the button to auto-detect →">
+      <button type="button" class="loc-btn" onclick="useMyLocation('location','locStatus')" data-en="📍 Use current" data-ar="📍 استخدم موقعي">📍 Use current</button>
     </div>
     <div class="loc-status" id="locStatus"></div>
 
-    <label>Additional description (optional)</label>
-    <input type="text" id="notes" placeholder="e.g. near the well, tall old palm by the fence">
+    <label data-en="Additional description (optional)" data-ar="وصف إضافي (اختياري)">Additional description (optional)</label>
+    <input type="text" id="notes" data-en-ph="e.g. near the well, tall old palm by the fence" data-ar-ph="مثلاً جنب البئر، نخلة قديمة طويلة جنب السور" placeholder="e.g. near the well, tall old palm by the fence">
 
-    <label>Trunk audio recording (WAV)</label>
+    <label data-en="Trunk audio recording (WAV)" data-ar="تسجيل صوتي للجذع (WAV)">Trunk audio recording (WAV)</label>
     <input type="file" id="audioFile" accept="audio/*">
 
-    <label>Image-based infestation probability (optional, 0–1)</label>
-    <input type="number" id="imgProb" min="0" max="1" step="0.05" placeholder="e.g. 0.6">
+    <label data-en="Image-based infestation probability (optional, 0–1)" data-ar="احتمال الإصابة من الصورة (اختياري، 0-1)">Image-based infestation probability (optional, 0–1)</label>
+    <input type="number" id="imgProb" min="0" max="1" step="0.05" data-en-ph="e.g. 0.6" data-ar-ph="مثلاً 0.6" placeholder="e.g. 0.6">
 
-    <button onclick="analyze()">Analyze now</button>
+    <button onclick="analyze()" data-en="Analyze now" data-ar="حلّل الآن">Analyze now</button>
 
     <div id="result"></div>
-    <a href="/static/palms.html" class="nav-link">View full palm registry →</a>
+    <a href="/palms.html" class="nav-link" data-en="View full palm registry →" data-ar="عرض سجل النخيل كامل ←">View full palm registry →</a>
   </div>
 </div>
 
@@ -103,25 +116,33 @@ const CLASS_MAP = {
   "سليم":"healthy","مبكرة":"early","متوسطة":"moderate","متقدمة":"advanced"
 };
 const CLASS_LABEL = {
-  healthy:"Healthy", early:"Early stage", moderate:"Moderate", advanced:"Advanced"
+  en: { healthy:"Healthy", early:"Early stage", moderate:"Moderate", advanced:"Advanced" },
+  ar: { healthy:"سليم", early:"مبكرة", moderate:"متوسطة", advanced:"متقدمة" },
+};
+const UI_TEXT = {
+  en: { needFile:"Please upload an audio file first.", analyzing:"Analyzing…", result:"Result:",
+        risk:"Combined risk score:", report:"Full treatment report", error:"Could not reach the server: " },
+  ar: { needFile:"ارفع ملف صوتي أولاً.", analyzing:"جاري التحليل…", result:"النتيجة:",
+        risk:"نسبة الخطورة المدمجة:", report:"تقرير علاج كامل", error:"تعذّر الوصول للسيرفر: " },
 };
 
 // يلتقط موقع GPS الحالي من متصفح الجهاز تلقائيًا بدل الكتابة اليدوية
 function useMyLocation(inputId, statusId){
   const status = document.getElementById(statusId);
+  const lang = getLang();
   if(!navigator.geolocation){
-    status.textContent = 'Geolocation is not supported on this device.';
+    status.textContent = lang==='ar' ? 'الجهاز لا يدعم تحديد الموقع.' : 'Geolocation is not supported on this device.';
     return;
   }
-  status.textContent = 'Detecting location…';
+  status.textContent = lang==='ar' ? 'جاري تحديد الموقع…' : 'Detecting location…';
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const lat = pos.coords.latitude.toFixed(5);
       const lon = pos.coords.longitude.toFixed(5);
       document.getElementById(inputId).value = `${lat}, ${lon}`;
-      status.textContent = '📍 Location captured';
+      status.textContent = lang==='ar' ? '📍 تم تحديد الموقع' : '📍 Location captured';
     },
-    (err) => { status.textContent = 'Could not get location: ' + err.message; },
+    (err) => { status.textContent = (lang==='ar' ? 'تعذّر تحديد الموقع: ' : 'Could not get location: ') + err.message; },
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
@@ -148,6 +169,8 @@ function formatReport(text){
 }
 
 async function analyze(){
+  const lang = getLang();
+  const t = UI_TEXT[lang];
   const palmId = document.getElementById('palmId').value || 'Test-Palm';
   const location = document.getElementById('location').value;
   const notes = document.getElementById('notes').value;
@@ -155,7 +178,7 @@ async function analyze(){
   const imgProb = document.getElementById('imgProb').value;
   const resultDiv = document.getElementById('result');
 
-  if(!fileInput.files.length){ alert('Please upload an audio file first.'); return; }
+  if(!fileInput.files.length){ alert(t.needFile); return; }
 
   const form = new FormData();
   form.append('audio', fileInput.files[0]);
@@ -163,9 +186,10 @@ async function analyze(){
   if(location) form.append('location', location);
   if(notes) form.append('notes', notes);
   if(imgProb) form.append('image_infested_probability', imgProb);
+  form.append('language', lang);
 
   resultDiv.style.display = 'block';
-  resultDiv.innerHTML = 'Analyzing…';
+  resultDiv.innerHTML = t.analyzing;
 
   try{
     const res = await fetch(`${API_BASE}/predict-full`, { method:'POST', body: form });
@@ -173,28 +197,48 @@ async function analyze(){
 
     const clsAr = data.fusion_result.final_class;
     const cls = CLASS_MAP[clsAr] || 'healthy';
+    const labels = CLASS_LABEL[lang];
 
     let probsHtml = Object.entries(data.audio_result.probabilities)
-      .map(([k,v]) => `<div class="prob-row"><span>${CLASS_LABEL[CLASS_MAP[k]] || k}</span><span>${(v*100).toFixed(0)}%</span></div>`)
+      .map(([k,v]) => `<div class="prob-row"><span>${labels[CLASS_MAP[k]] || k}</span><span>${(v*100).toFixed(0)}%</span></div>`)
       .join('');
 
     const reportLabel = data.needs_attention
-      ? '<span class="report-badge">Full treatment report</span>'
+      ? `<span class="report-badge">${t.report}</span>`
       : '';
 
     resultDiv.innerHTML = `
-      <div>Result: <span class="badge b-${cls}">${CLASS_LABEL[cls]}</span></div>
+      <div>${t.result} <span class="badge b-${cls}">${labels[cls]}</span></div>
       ${data.location ? `<div class="score-line">📍 ${data.location}</div>` : ''}
-      <div class="score-line">Combined risk score: ${(data.fusion_result.final_score*100).toFixed(0)}%</div>
+      <div class="score-line">${t.risk} ${(data.fusion_result.final_score*100).toFixed(0)}%</div>
       <div style="margin-top:10px">${probsHtml}</div>
       ${reportLabel}
       <div class="rec">${formatReport(data.recommendation)}</div>
     `;
     loadSavedPalms();
   }catch(err){
-    resultDiv.innerHTML = 'Could not reach the server: ' + err;
+    resultDiv.innerHTML = t.error + err;
   }
 }
+
+// ---------- تبديل اللغة (عربي/إنجليزي) - مشترك عبر كل صفحات الموقع ----------
+function getLang(){ return localStorage.getItem('nakhlaguard-lang') || 'en'; }
+function setLang(lang){
+  localStorage.setItem('nakhlaguard-lang', lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('rtl', lang === 'ar');
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = lang === 'ar' ? el.getAttribute('data-ar') : el.getAttribute('data-en');
+  });
+  document.querySelectorAll('[data-en-ph]').forEach(el => {
+    el.placeholder = lang === 'ar' ? el.getAttribute('data-ar-ph') : el.getAttribute('data-en-ph');
+  });
+  const btn = document.getElementById('langToggle');
+  if(btn) btn.textContent = lang === 'ar' ? 'English' : 'العربية';
+}
+function toggleLang(){ setLang(getLang() === 'ar' ? 'en' : 'ar'); }
+setLang(getLang());
 </script>
 </body>
 </html>
